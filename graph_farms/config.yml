@@ -1,0 +1,50 @@
+# settings for the inflow
+inflow_settings: 
+  mean_V: 10                          # Mean wind speed
+  k_V: 2.0                            # Shape factor of a Weibull distribution of the wind speed
+  Iref: 0.16                          # Iref parameter
+  Vmin: 3                             # Minimum simulated wind speed <Vin
+  Vmax: 25                            # Maximum simulated wind speed >Vout
+  mean_turb_Lscale: 0.2               # Mean value of turbulence length scale as percent of chord length, at the inlet grid
+  COV_turb_Lscale: 0.01               # Coefficient of variation (COV) of turbulence length scale
+  COV_Re: 0.02                        # COV of the Reynolds number. Variations due to atmospheric pressure, temperature and humidity
+  COV_Ma: 0.02                        # COV of the Mach number. Variations due to atmospheric pressure, temperature and humidity
+  mean_Rho: 1.225                     # mean air density
+  COV_Rho: 0.01                       # COV of air density. Variations due to atmospheric pressure, temperature and humidity
+  min_ang_attack: -45                 # min angle of attack
+  max_ang_attack: 45                  # max angle of attack
+  mean_Dyn_Viscosity: 1.81397e-5      # Fluid viscosity (dynamic) k/m-s
+  COV_Dyn_Viscosity: 0.01             # Coefficient of variation (COV) of Fluid viscosity (dynamic) k/m-s
+  mean_air_temp: 15                   # Mean value of air temperature
+  COV_air_temp: 0.30                  # Coefficient of variation (COV) of air temperature
+  mean_D: 240                         # Mean wind direction (degrees)
+  k_D: 2                              # Shape factor of a Weibull distribution of the wind direction
+  min_alpha: -0.0997070313            # Minimum shear exponent (from PyWake)
+  max_alpha: 0.4994140625             # Maximum shear exponent (from PyWake)
+
+
+# settings for the turbine, --> monopile frequency
+turbine_settings:
+  rotor_diameter: 175                 # Rotor diameter in [m]
+  min_rot_rpm: 4                      # minimum rotor RPM when the turbine produces power
+  max_rot_rpm: 13                     # maximum rotor RPM when the turbine produces power
+  rated_u: 12                         # Rated wind speed
+  cutin_u: 3                          # min wind speed at which turbine starts producing power
+  cutout_u: 25                        # max wind speed at which turbine is still producing power before shutting down due to high wind speeds
+  height_above_ground: 100            # Hub height
+  min_rotor_distance: 3               # Factor to multiply with rotor diameter to produce the minimal distance between 2 turbines
+  max_rotor_distance: 8               # Factor to multiply with rotor diameter to produce the maximal distance between 2 turbines
+  min_turbines: 25                    # Minimal number of turbines in farm
+  max_turbines: 100                   # Maximal number of turbines in farm
+  turbines_step: 5                    # Step for number of turbines in farmmin
+
+# settings for the yaw error
+yaw_settings:
+  mu_yaw: 0.0 # mean yaw error for special conditions
+  sig_yaw: 1.5 # standard deviation of yaw error for special conditions
+  yawL: -6 # lower limit of yaw error distribution
+  yawH: 6  # upper limit of yaw error distribution
+# Soil: dependence on monopile geometry and structure
+
+
+# Sea: wave amplitude, wave periods

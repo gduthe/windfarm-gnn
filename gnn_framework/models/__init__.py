@@ -1,0 +1,1 @@
+from .windfarmgnn import WindFarmGNN
