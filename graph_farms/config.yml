@@ -23,20 +23,21 @@ inflow_settings:
   max_alpha: 0.4994140625             # Maximum shear exponent (from PyWake)
 
 
-# settings for the turbine, --> monopile frequency
+# settings for the turbine, default here is IEA 3.4 MW which is the model used in PyWake for loads
 turbine_settings:
-  rotor_diameter: 175                 # Rotor diameter in [m]
-  min_rot_rpm: 4                      # minimum rotor RPM when the turbine produces power
-  max_rot_rpm: 13                     # maximum rotor RPM when the turbine produces power
-  rated_u: 12                         # Rated wind speed
-  cutin_u: 3                          # min wind speed at which turbine starts producing power
+  rotor_diameter: 130                 # Rotor diameter in [m]
+  min_rot_rpm: 3.8                    # minimum rotor RPM when the turbine produces power
+  max_rot_rpm: 12.9                   # maximum rotor RPM when the turbine produces power
+  rated_u: 9.8                        # Rated wind speed
+  cutin_u: 4                          # min wind speed at which turbine starts producing power
   cutout_u: 25                        # max wind speed at which turbine is still producing power before shutting down due to high wind speeds
-  height_above_ground: 100            # Hub height
-  min_rotor_distance: 3               # Factor to multiply with rotor diameter to produce the minimal distance between 2 turbines
-  max_rotor_distance: 8               # Factor to multiply with rotor diameter to produce the maximal distance between 2 turbines
+  height_above_ground: 110            # Hub height
+  min_rotor_dist: 3                   # Factor to multiply with rotor diameter to produce the minimal distance between 2 turbines
+  max_rotor_dist: 8                   # Factor to multiply with rotor diameter to produce the maximal distance between 2 turbines
   min_turbines: 25                    # Minimal number of turbines in farm
   max_turbines: 100                   # Maximal number of turbines in farm
-  turbines_step: 5                    # Step for number of turbines in farmmin
+  min_farm_lw_ratio: 0.5              # Minimal ratio of farm length to farm width
+  max_farm_lw_ratio: 4                # Maximal ratio of farm length to farm width
 
 # settings for the yaw error
 yaw_settings:
@@ -44,7 +45,3 @@ yaw_settings:
   sig_yaw: 1.5 # standard deviation of yaw error for special conditions
   yawL: -6 # lower limit of yaw error distribution
   yawH: 6  # upper limit of yaw error distribution
-# Soil: dependence on monopile geometry and structure
-
-
-# Sea: wave amplitude, wave periods

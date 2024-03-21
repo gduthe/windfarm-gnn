@@ -12,9 +12,9 @@ class GraphFarmsDataset(Dataset):
         The dataset should be organized as follows:
         root_path
             ├── layout1.zip
-                ├── graph1.pt
-                ├── graph2.pt
-                ...
+            │    ├── graph1.pt
+            │    ├── graph2.pt
+            │    ...
             ├── layout2.zip
             ...
 

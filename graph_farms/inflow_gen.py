@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.stats import qmc, weibull_min, norm, truncnorm  # Update scipy to latest version
+from scipy.stats import qmc, weibull_min, norm, truncnorm
 import matplotlib.pyplot as plt
 import seaborn as sns
 import random
@@ -40,7 +40,7 @@ class InflowGenerator:
         return u
 
     def __gen_turbulence(self, u: np.array):
-        # generate free stream turbulence and turbulence intensity
+        # generate free stream turbulence and turbulence intensity (IEC standards)
         mu_T = self.inflow_settings['Iref'] * (0.75 * u + 3.8)
         sig_T = 1.4 * self.inflow_settings['Iref']
         m = np.log((mu_T ** 2) / np.sqrt(sig_T ** 2 + mu_T ** 2))
@@ -75,8 +75,8 @@ class InflowGenerator:
 
     def __gen_wind_direction(self, sobol_samples: np.array):
         bounds = np.array([0, 360])
-        wd = np.random.uniform(bounds[0], bounds[1], len(sobol_samples))
-
+        wd = sobol_samples * (bounds[1] - bounds[0]) + bounds[0]
+        
         return wd
 
     def __gen_freestream_shear(self, u: np.array):

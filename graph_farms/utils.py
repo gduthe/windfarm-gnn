@@ -6,37 +6,50 @@ from torch_geometric.utils import dense_to_sparse
 import math
 import pandas as pd
 
-def rotate(origin, point, angle):
-    """ Rotate a point counterclockwise by a given angle around a given origin.
+def rotate(rot_center, coords, angle):
+    """ Rotate a set of 2D points counterclockwise by a given angle around a given origin.
         The angle should be given in radians.
+        
+        args:
+        rot_center: tuple, the center of the rotation
+        coords: (n, 2) np.array, the coordinates of the points to rotate
+        angle: float, the angle of the rotation in radians
     """
-    ox, oy = origin
-    px, py = point
+    # create the rotation matrix
+    R = np.array([[math.cos(angle), -math.sin(angle)],
+                  [math.sin(angle), math.cos(angle)]])
+    
+    # translate the point to the origin
+    new_coords = np.array(coords) - np.array(rot_center)
+    
+    # rotate the points around the origin
+    new_coords = np.matmul(R, new_coords.T).T
+    
+    # translate the points back
+    new_coords += np.array(rot_center)
 
-    qx = ox + math.cos(angle) * (px - ox) - math.sin(angle) * (py - oy)
-    qy = oy + math.sin(angle) * (px - ox) + math.cos(angle) * (py - oy)
-    return qx, qy
+    return new_coords
 
 
-def area(x1, y1, x2, y2, x3, y3):
+def tri_area(x1, y1, x2, y2, x3, y3):
     """ Calculate the area of a triangle given its vertices.""" 
     a = abs((x1 * (y2 - y3) + (x2 * (y3 - y1)) + (x3 * (y1 - y2))) / 2.0)
     return a
 
 
-def is_inside(x1, y1, x2, y2, x3, y3, x, y):
+def is_inside_triangle(x1, y1, x2, y2, x3, y3, x, y):
     """ Check if a point is inside a triangle. """
     # calculate area of triangle ABC
-    A = area(x1, y1, x2, y2, x3, y3)
+    A = tri_area(x1, y1, x2, y2, x3, y3)
 
     # calculate area of triangle PBC
-    A1 = area(x, y, x2, y2, x3, y3)
+    A1 = tri_area(x, y, x2, y2, x3, y3)
 
     # calculate area of triangle PAC
-    A2 = area(x1, y1, x, y, x3, y3)
+    A2 = tri_area(x1, y1, x, y, x3, y3)
 
     # calculate area of triangle PAB
-    A3 = area(x1, y1, x2, y2, x, y)
+    A3 = tri_area(x1, y1, x2, y2, x, y)
 
     # check if sum of A1, A2 and A3 is same as A
     if math.isclose(A, A1 + A2 + A3, abs_tol=1e-1):
@@ -46,33 +59,14 @@ def is_inside(x1, y1, x2, y2, x3, y3, x, y):
 
 def to_graph(points: np.array, connectivity: str, min_dist=None, constant=30, add_edge='polar'):
     '''
-    Converts np.array to torch_geometric.data.data.Data
-
-    ...
-
-    Arguments:
-    ----------
-    points : np.array
-        a [num_turbines, 2] array containing the coordinates of the turbines.
-    connectivity : str
-        string with the accepted values \'delaunay\', \'knn\' and \'radial\'.
-    min_dist : (float, optional)
-        float number stating the minimal distance between turbines (default None). Required for connectivity = \'radial\'.
-    constant : (float, optional)
-        float constant to be multiplied by the minimal distance defining a radius (default 30). Required for connectivity = \'radial\'.
-    add_edge : (str, optional)
-        str specifing if \'polar\', \'cartesian\' or \'local cartesian\' coordinates of the nodes should be added to the edges (default \'polar\').
-
-    Returns
-    -------
-    torch_geometric.data.data.Data
-        a torch_geometric.data.data.Data graph.
-
-    Raises
-    ------
-    ValueError
-        If connectivity string isn't \'delaunay\', \'knn\' or \'radial\'.
-        If minimal distance isn't defined for radial connectivity.
+    Converts np.array to torch_geometric.data.data.Data object with the specified connectivity and edge feature type.
+    
+    args:
+    points: np.array, the coordinates of the points to convert
+    connectivity: str, the kind of connectivity to use: either delaunay, knn, radial, fully_connected
+    min_dist: float, the minimal distance between the points (required for radial connectivity)
+    constant: float, the constant to multiply the minimal distance to get the radius of the radial connectivity
+    add_edge: str, the kind of geometrical edge feature to use: either polar, cartesian, local cartesian
     '''
 
     assert (points.shape[1] == 2)
@@ -139,3 +133,8 @@ def get_mean_values(y:list, y_pred:list, dataset:Dataset, idx:int=0):
         df = pd.concat([df,df_int],axis=0)
     df.set_index('WT',inplace=True)
     return df
+
+if __name__ == "__main__":
+    # test the rotate function
+    print(rotate((0,0), np.array([[1,0], [0,1]]), math.pi/2))
+    print(rotate((1,1), np.array([[1,0], [0,1]]), math.pi/2))

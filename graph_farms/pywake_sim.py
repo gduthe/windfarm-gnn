@@ -9,6 +9,15 @@ from py_wake.turbulence_models import CrespoHernandez
 from py_wake.site._site import UniformSite
 
 def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, loads_method:str):
+    """ Function to simulate the power and loads of a wind farm given the inflow conditions and the
+        wind turbine positions using PyWake. The function will return the simulated power and loads 
+        for each turbine.
+        
+        args:
+        inflow_df: pd.DataFrame, the inflow conditions for the wind farm
+        positions: np.ndarray, the wind turbine positions
+        loads_method: str, the kind of load model to use: either OneWT or TwoWT
+    """
     assert (loads_method in ['OneWT', 'TwoWT'])
     xr.set_options(display_expand_data=False)
     site = UniformSite()

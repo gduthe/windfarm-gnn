@@ -1,149 +1,219 @@
 import numpy as np
-from utils import rotate, is_inside
+from utils import rotate, is_inside_triangle
 import random
+from scipy.stats import qmc
 from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 import matplotlib
+import yaml
+from box import Box
 
-def generate_layout(n_points, length, width, min_dist):
 
-    width_ratio = length / width
-    num_y = np.int32(np.sqrt(n_points / width_ratio)) + 1
-    num_x = np.int32(n_points / num_y) + 1
-
-    # create regularly spaced points
-    x = np.linspace(0., length - 1, num_x, dtype=np.float32)
-    y = np.linspace(0., width - 1, num_y, dtype=np.float32)
-    coords = np.stack(np.meshgrid(x, y), -1).reshape(-1, 2)
-
-    # compute spacing
-    init_dist = np.min((x[1] - x[0], y[1] - y[0]))
-
-    # perturb points
-    max_movement = (init_dist - min_dist) / 2
-
-    # create a smaller rectangle
-    x1 = np.linspace(0. + max_movement, length - 1 - max_movement, num_x, dtype=np.float32)
-    y1 = np.linspace(0. + max_movement, width - 1 - max_movement, num_y, dtype=np.float32)
-    coords1 = np.stack(np.meshgrid(x1, y1), -1).reshape(-1, 2)
-    init_dist1 = np.min((x1[1] - x1[0], y1[1] - y1[0]))
-    max_movement1 = (init_dist1 - min_dist) / 2
-
-    noise = np.random.uniform(low=-max_movement1,
-                                high=max_movement1,
-                                size=(len(coords1), 2))
-    coords1 += noise
-    l = [0, np.pi / 8, np.pi / 4, np.pi / 2]
-    alpha = random.choice(l)
-    coords2 = np.array([rotate((0, 0), c, alpha) for c in coords1])
-
-    ## Ellipse
-
-    theta = np.arange(0, 2 * np.pi, 0.01)
-
-    v = random.choice([2, 4, 6])
-
-    a = length / v
-    b = width / 2
-
-    x0, y0 = rotate((0, 0), (length / 2, width / 2), alpha)
-
-    xpos = (a) * np.cos(theta)
-    ypos = (b) * np.sin(theta)
-
-    extra = random.choice([np.pi / 8, np.pi / 16, 0, - np.pi / 16, -np.pi / 8])
-
-    new_xpos = x0 + (xpos) * np.cos(-alpha + extra) + (ypos) * np.sin(-alpha + extra)
-    new_ypos = y0 + (-xpos) * np.sin(-alpha + extra) + (ypos) * np.cos(-alpha + extra)
-
-    s1 = ((a ** 2) * (np.sin(alpha - extra) ** 2) + (b ** 2) * (np.cos(alpha - extra) ** 2)) * (
-                coords2[:, 0] - x0) ** 2
-    s2 = 2 * (b ** 2 - a ** 2) * np.sin(alpha - extra) * np.cos(alpha - extra) * (coords2[:, 0] - x0) * (
-                coords2[:, 1] - y0)
-    s3 = ((a ** 2) * (np.cos(alpha - extra) ** 2) + (b ** 2) * (np.sin(alpha - extra) ** 2)) * (
-                coords2[:, 1] - y0) ** 2
-
-    inside = s1 + s2 + s3 < (a ** 2) * (b ** 2)
-
-    c4 = (np.array([new_xpos, new_ypos]))
-
-    ## Triangle
-
-    x11 = length / 2
-    y11 = width
-    x21 = 0
-    y21 = 0
-    x31 = length
-    y31 = 0
-    x = coords2[:, 0]
-    y = coords2[:, 1]
-    extra = random.choice([np.pi / 8, np.pi / 16, 0, - np.pi / 16, -np.pi / 8])
-    x1, y1 = rotate((0, 0), (x11, y11), alpha + extra)
-    x2, y2 = rotate((0, 0), (x21, y21), alpha + extra)
-    x3, y3 = rotate((0, 0), (x31, y31), alpha + extra)
-    m = [is_inside(x1, y1, x2, y2, x3, y3, xp, yp) for xp, yp in zip(x, y)]
-
-    ## small circles
-
-    x = coords2[:n_points][:, 0]
-    y = coords2[:n_points][:, 1]
-
-    random_turb = random.choice(coords2[:n_points])
-    random_turb2 = random.choice(coords2[:n_points])
-    random_turb3 = random.choice(coords2[:n_points])
-    radius = length / 4
-
-    mm = (x - random_turb[0]) ** 2 + (y - random_turb[1]) ** 2 < radius ** 2
-    mm2 = (x - random_turb2[0]) ** 2 + (y - random_turb2[1]) ** 2 < radius ** 2
-    mm3 = (x - random_turb3[0]) ** 2 + (y - random_turb3[1]) ** 2 < radius ** 2
-
-    return (coords2[:n_points], c4, inside[:n_points], alpha, m[:n_points], np.array([[x1, y1], [x2, y2], [x3, y3]]),
-    radius, random_turb, mm[:n_points], random_turb2, mm2[:n_points], random_turb3, mm3[:n_points])
-
-def plot(n_points, length, width, min_dist, x=None, y=None):
-    """ Plotting function to visualize a random wind farm layout. """
+class LayoutGenerator:
+    """ Layout generation class, generates wind wind farm layouts.
+        Needs to be a class to obtain a consistent sobol sequence across all the parameters.
+        
+        args:
+        config_dict: dict, the settings for the inflow generation
+        num_layouts: int, the number of layouts to generate
+    """
+    def __init__(self, config_dict: dict):
+        self.turbine_settings = config_dict['turbine_settings']
+        self.sampler = qmc.Sobol(d=3, scramble=True)
     
-    matplotlib.rc('text', usetex=True)
-    matplotlib.rcParams['font.family'] = 'DejaVu Sans'
-    matplotlib.rcParams['axes.unicode_minus'] = False
+    def generate_layouts(self, num_layouts: int):
+        """ Returns a list with the generated layouts.""" 
+        # draw sobol samples
+        samples = self.sampler.random_base2(m=int(np.ceil(np.log2(num_layouts))))[:num_layouts]
+        
+        # sample the number of turbines and the rotor minimum distance
+        n_points = samples[:, 0] * (self.turbine_settings['max_turbines'] - self.turbine_settings['min_turbines']) + self.turbine_settings['min_turbines']
+        n_points = n_points.astype(int)
+        rotor_dists = samples[:, 1] * (self.turbine_settings['max_rotor_dist'] - self.turbine_settings['min_rotor_dist']) + self.turbine_settings['min_rotor_dist']
+        min_dists = self.turbine_settings['rotor_diameter'] * rotor_dists
+        
+        # sample the width-length ratio of the farm
+        farm_lw_ratios = samples[:, 2] * (self.turbine_settings['max_farm_lw_ratio'] - self.turbine_settings['min_farm_lw_ratio']) + self.turbine_settings['min_farm_lw_ratio']
+        # farm_lw_ratios = [random.uniform(.5,4) for i in range(num_layouts)]
+        
+        # generate the layouts
+        layouts = []
+        for i in range(num_layouts):
+            layout = self.generate_random_layout(n_points[i], farm_lw_ratios[i], min_dists[i])
+            coords = layout['base_coords']
+            
+            # pick at random the type of layout
+            form = random.choice(['ellipse', 'triangle', 'circles' 'rectangle'])
+            if form == 'ellipse':
+                coords = coords[layout['elliptical_mask']]
+            elif form == 'triangle':
+                coords = coords[layout['triangle_mask']]
+            elif form == 'circles':
+                coords = coords[layout['circles_mask']]
+            else:
+                coords = coords
+            
+            layouts.append({'coords': coords, 'form': form, 'min_dist': min_dists[i]})
+            
+        return layouts
+    
+    def generate_random_layout(self, n_points, farm_lw_ratio, min_dist):
+        """ Generate a random wind farm layout given the number of points, the length, the width of the 
+            farm and the minimum distance between turbines.
+        """
+        # creating the initial rectangular domain based on farm aspect ratio
+        width = np.ceil(n_points * min_dist)
+        length = farm_lw_ratio * width
+        num_y = np.int32(np.sqrt(n_points / farm_lw_ratio)) + 1
+        num_x = np.int32(n_points / num_y) + 1
 
-    if np.sum(x) is not None and np.sum(y) is not None:
-        coords = np.array([[a, b] for a, b in zip(x, y)])
-    else:
-        coords, c4, i, alpha, m, t, rad, rt, mm, rt2, mm2, rt3, mm3 = generate_layout(n_points, length,
-                                                                                                    width, min_dist)
-    fig, ax = plt.subplots(figsize=(7, 4))
-    plt.scatter(coords[:, 0], coords[:, 1], s=150, c='black', marker="2",
-                linewidth=1, label=str(len(coords[:, 0])) + ' WT')
-    r = Rectangle((0, 0), length, width, linestyle='--', fill=False)
-    t2 = matplotlib.transforms.Affine2D().rotate(alpha) + ax.transData
-    r.set_transform(t2)
-    plt.scatter(coords[i][:, 0], coords[i][:, 1], s=150, c='red', marker="2",
-                linewidth=1, label='Inside ellipse')
-    plt.plot(c4[0, :], c4[1, :], 'r', linestyle='--')
-    ax.add_patch(r)
-    plt.scatter(coords[m][:, 0], coords[m][:, 1], s=150, c='blue', marker="2",
-                linewidth=1, label='Inside triangle')
-    t1 = plt.Polygon(t[:3, :], color='Blue', linestyle='--', fill=False)
-    ax.add_patch(t1)
-    plt.scatter(coords[mm][:, 0], coords[mm][:, 1], s=150, c='green', marker="2",
-                linewidth=1, label='Random circles')
-    c = plt.Circle((rt[0], rt[1]), radius=rad, color='green', linestyle='--', fill=False)
-    ax.add_patch(c)
-    plt.scatter(coords[mm2][:, 0], coords[mm2][:, 1], s=150, c='green', marker="2",
-                linewidth=1)
-    c2 = plt.Circle((rt2[0], rt2[1]), radius=rad, color='green', linestyle='--', fill=False)
-    ax.add_patch(c2)
-    plt.scatter(coords[mm3][:, 0], coords[mm3][:, 1], s=150, c='green', marker="2",
-                linewidth=1)
-    c3 = plt.Circle((rt3[0], rt3[1]), radius=rad, color='green', linestyle='--', fill=False)
-    ax.add_patch(c3)
-    ax.axis('equal')
-    plt.legend()
-    return fig, ax
-    plt.show()
+        # create regularly spaced points for the boundary of the overall rectangular domain
+        x = np.linspace(0., length, num_x, dtype=np.float32)
+        y = np.linspace(0., width, num_y, dtype=np.float32)
+
+        # compute the resulting spacing between points
+        init_dist = np.min((x[1] - x[0], y[1] - y[0]))
+        
+        # compute the max allowable movement for the points such that the minimum distance is respected
+        max_movement = (init_dist - min_dist) / 2
+
+        # create a smaller rectangular domain reducing spacing between points
+        x1 = np.linspace(0. + max_movement, length - max_movement, num_x, dtype=np.float32)
+        y1 = np.linspace(0. + max_movement, width - max_movement, num_y, dtype=np.float32)
+        
+        # the base coordinates of the turbines are the meshgrid of the smaller rectangular domain
+        base_coords = np.stack(np.meshgrid(x1, y1), -1).reshape(-1, 2)
+        
+        # delete random points from the base coordinates if length exceeds n_points
+        if len(base_coords) > n_points:
+            # pick random indices to delete
+            indices = np.random.choice(len(base_coords), len(base_coords) - n_points, replace=False)
+            base_coords = np.delete(base_coords, indices, axis=0)
+            
+        # recompute the resulting spacing between points
+        init_dist1 = np.min((x1[1] - x1[0], y1[1] - y1[0]))
+        
+        # recompute the max allowable movement for the points such that the minimum distance is respected
+        max_movement1 = (init_dist1 - min_dist) / 2
+
+        # perturb points by the max allowable movement
+        noise = np.random.uniform(low=-max_movement1, high=max_movement1, size=(len(base_coords), 2))
+        base_coords += noise
+        
+        # randomly rotate the rectangle around (0,0)
+        alpha = random.uniform(0, np.pi/2)
+        base_coords = rotate((0, 0), base_coords, alpha)
+
+        # creating the elliptical mask
+        theta = np.arange(0, 2 * np.pi, 0.01)
+        v = random.choice([2, 4, 6])
+        a = length / v
+        b = width / 2
+        x0, y0 = rotate((0, 0), (length / 2, width / 2), alpha)
+        extra = random.choice([np.pi / 8, np.pi / 16, 0, - np.pi / 16, -np.pi / 8]) # extra random rotation
+        s1 = ((a**2) * (np.sin(alpha - extra)**2) + (b**2) * (np.cos(alpha - extra)**2)) * (base_coords[:, 0] - x0)**2
+        s2 = 2 * (b**2 - a ** 2) * np.sin(alpha - extra) * np.cos(alpha - extra) * (base_coords[:, 0] - x0) * ( base_coords[:, 1] - y0)
+        s3 = ((a**2) * (np.cos(alpha - extra)**2) + (b**2) * (np.sin(alpha - extra)**2)) * (base_coords[:, 1] - y0)**2
+        elliptical_mask = s1 + s2 + s3 < (a**2) * (b**2)
+        
+        # create the ellipse boundary
+        xpos = (a) * np.cos(theta)
+        ypos = (b) * np.sin(theta)
+        new_xpos = x0 + (xpos) * np.cos(-alpha + extra) + (ypos) * np.sin(-alpha + extra)
+        new_ypos = y0 + (-xpos) * np.sin(-alpha + extra) + (ypos) * np.cos(-alpha + extra)
+        ellipse_boundary = np.array([new_xpos, new_ypos])
+
+        # creating the triangular mask
+        x11 = length / 2
+        y11 = width
+        x21 = 0
+        y21 = 0
+        x31 = length
+        y31 = 0
+        x = base_coords[:, 0]
+        y = base_coords[:, 1]
+        extra = random.choice([np.pi / 8, np.pi / 16, 0, - np.pi / 16, -np.pi / 8]) # extra random rotation
+        x1, y1 = rotate((0, 0), (x11, y11), alpha + extra)
+        x2, y2 = rotate((0, 0), (x21, y21), alpha + extra)
+        x3, y3 = rotate((0, 0), (x31, y31), alpha + extra)
+        triangle_mask = [is_inside_triangle(x1, y1, x2, y2, x3, y3, xp, yp) for xp, yp in zip(x, y)]
+        triangle_boundary = np.array([[x1, y1], [x2, y2], [x3, y3]])
+
+        # creating the small circles masks
+        x = base_coords[:, 0]
+        y = base_coords[:, 1]
+
+        random_turb = random.choice(base_coords) # random turbine choice
+        random_turb2 = random.choice(base_coords) # random turbine choice
+        random_turb3 = random.choice(base_coords) # random turbine choice
+        radius = length / 4
+
+        circle_mask1 = (x - random_turb[0]) ** 2 + (y - random_turb[1]) ** 2 < radius ** 2
+        circle_mask2 = (x - random_turb2[0]) ** 2 + (y - random_turb2[1]) ** 2 < radius ** 2
+        circle_mask3 = (x - random_turb3[0]) ** 2 + (y - random_turb3[1]) ** 2 < radius ** 2
+        
+        circles_mask = circle_mask1 + circle_mask2 + circle_mask3
+        circles_centers = [random_turb, random_turb2, random_turb3]
+        
+        # return the layout as a dictionary
+        output_dict = {'base_coords': base_coords, 'ellipse': ellipse_boundary, 'elliptical_mask': elliptical_mask,
+                       'triangle': triangle_boundary, 'triangle_mask': triangle_mask, 'circles_mask': circles_mask,
+                       'circles_centers': circles_centers, 'circles_radius': radius, 'width': width, 'length': length, 
+                       'alpha': alpha}
+
+        return output_dict
+        
+    def plot(self, layout):
+        """ Plotting function to visualize a wind farm layout. """
+        
+        matplotlib.rc('text', usetex=True)
+        matplotlib.rcParams['font.family'] = 'DejaVu Sans'
+        matplotlib.rcParams['axes.unicode_minus'] = False
+
+        coords = layout['base_coords']
+        length = layout['length']
+        width = layout['width']
+        alpha = layout['alpha']
+        ellipse = layout['ellipse']
+        ellipse_mask = layout['elliptical_mask']
+        triangle = layout['triangle']
+        triangle_mask = layout['triangle_mask']
+        cicles_radius = layout['circles_radius']
+        circle_centers = layout['circles_centers']
+        circles_mask = layout['circles_mask']
+        
+            
+        fig, ax = plt.subplots(figsize=(7, 4))
+        plt.scatter(coords[:, 0], coords[:, 1], s=150, c='black', marker="2",
+                    linewidth=1, label=str(len(coords[:, 0])) + ' WT')
+        r = Rectangle((0, 0), length, width, linestyle='--', fill=False)
+        t2 = matplotlib.transforms.Affine2D().rotate(alpha) + ax.transData
+        r.set_transform(t2)
+        plt.scatter(coords[ellipse_mask][:, 0], coords[ellipse_mask][:, 1], s=150, c='red', marker="2",
+                    linewidth=1, label='Inside ellipse')
+        plt.plot(ellipse[0, :], ellipse[1, :], 'r', linestyle='--')
+        ax.add_patch(r)
+        plt.scatter(coords[triangle_mask][:, 0], coords[triangle_mask][:, 1], s=150, c='blue', marker="2",
+                    linewidth=1, label='Inside triangle')
+        t1 = plt.Polygon(triangle[:3, :], color='Blue', linestyle='--', fill=False)
+        ax.add_patch(t1)
+        plt.scatter(coords[circles_mask][:, 0], coords[circles_mask][:, 1], s=150, c='green', marker="2",
+                    linewidth=1, label='Random circles')
+        c = plt.Circle((circle_centers[0][0], circle_centers[0][1]), radius=cicles_radius, color='green', linestyle='--', fill=False)
+        ax.add_patch(c)
+        c2 = plt.Circle((circle_centers[1][0], circle_centers[1][1]), radius=cicles_radius, color='green', linestyle='--', fill=False)
+        ax.add_patch(c2)
+        c3 = plt.Circle((circle_centers[2][0], circle_centers[2][1]), radius=cicles_radius, color='lightgreen', linestyle='--', fill=False)
+        ax.add_patch(c3)
+        ax.axis('equal')
+        plt.legend()
+        return fig, ax
 
 if __name__ == "__main__":
     # example usage
-    plot(100, 1000, 1000, 100)
+    layout_generator = LayoutGenerator(config_dict=Box.from_yaml(filename='/home/gregory/Documents/PhD/windfarm-gnn/graph_farms/config.yml', Loader=yaml.FullLoader))
+    layouts = layout_generator.generate_layouts(10)
+    layout_generator.plot(layouts[0])
+    layout_generator.plot(layouts[4])
+    layout_generator.plot(layouts[9])
     plt.show()
