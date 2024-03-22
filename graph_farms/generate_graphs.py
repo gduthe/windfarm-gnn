@@ -134,16 +134,6 @@ def generate_graphs(config_path:str, num_layouts:int, num_inflows:int, dset_path
     inflow_generator = InflowGenerator(config)
     inflows = inflow_generator.generate_all_bcs(num_samples=num_inflows*num_layouts, plot=False)
     inflow_df = pd.DataFrame(data=inflows)
-    
-    # uncomment the following code to get a uniform sample of inflow directions from 0 to 360 for all inflow conditions
-    # this will multiply the number of inflows by 360 
-    # wd_values = wd_values = np.arange(0, 360, 5)
-    # replicated_df = pd.DataFrame(np.repeat(inflow_df.values,  len(wd_values), axis=0), columns=inflow_df.columns)
-    # replicated_df['wd'] = np.tile(wd_values, len(inflow_df))
-    # num_inflows = len(wd_values)* num_inflows
-    # inflow_df = replicated_df
-    
-    # inflow_df.iloc[:, 3:] = inflow_df.iloc[0, 3:] # uncomment to get same u and ti for all samples
 
     # loop through the layouts, processing them in parallel
     Parallel(n_jobs=num_threads)(delayed(process_one_layout)

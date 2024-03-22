@@ -74,12 +74,14 @@ class InflowGenerator:
         return HFlowAng
 
     def __gen_wind_direction(self, sobol_samples: np.array):
+        # generates the wind direction between 0 and 360 degrees
         bounds = np.array([0, 360])
         wd = sobol_samples * (bounds[1] - bounds[0]) + bounds[0]
         
         return wd
 
     def __gen_freestream_shear(self, u: np.array):
+        # generate free stream shear exponent
         mu_alpha = 0.088 * (np.log(u) - 1)
         sig_alpha = 1.0 / u
         bounds = np.array([self.inflow_settings['min_alpha'], self.inflow_settings['max_alpha']])
@@ -124,6 +126,7 @@ class InflowGenerator:
         return airtemp, rho, nu
 
     def generate_all_bcs(self, num_samples: int, plot=False):
+        # generates all the boundary conditions using sobol sampling 
         samples = self.sampler.random_base2(m=int(np.ceil(np.log2(num_samples))))[:num_samples]
         u = self.__gen_wind_velocities(samples[:, 0])
         wd = self.__gen_wind_direction(samples[:, 1])
