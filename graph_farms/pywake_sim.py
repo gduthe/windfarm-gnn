@@ -7,6 +7,12 @@ from py_wake.superposition_models import LinearSum
 from py_wake.wind_farm_models import PropagateDownwind
 from py_wake.turbulence_models import CrespoHernandez
 from py_wake.site._site import UniformSite
+import tensorflow as tf
+import os
+
+# ignore tensorflow warnings
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, loads_method:str):
     """ Function to simulate the power and loads of a wind farm given the inflow conditions and the
@@ -26,7 +32,7 @@ def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, loads_method:s
     wd = inflow_df.wd
     ti = inflow_df.ti
     yaw = inflow_df.hflowang
-    alpha = inflow_df.shearExp
+    alpha = inflow_df.shearexp
     x = positions[:, 0]
     y = positions[:, 1]
 

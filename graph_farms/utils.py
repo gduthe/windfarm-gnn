@@ -1,10 +1,9 @@
 import numpy as np
 import torch
 from torch_geometric.transforms import FaceToEdge, Polar, KNNGraph, RadiusGraph, Delaunay, Cartesian, LocalCartesian
-from torch_geometric.data import Data, Dataset
+from torch_geometric.data import Data
 from torch_geometric.utils import dense_to_sparse
 import math
-import pandas as pd
 
 def rotate(rot_center, coords, angle):
     """ Rotate a set of 2D points counterclockwise by a given angle around a given origin.
@@ -106,33 +105,6 @@ def to_graph(points: np.array, connectivity: str, min_dist=None, constant=30, ad
         raise ValueError(
             'Please select a coordinate system that is supported (available types: : \'polar\', \'cartesian\' or \'local cartesian\')')
     return g
-
-def get_mean_values(y:list, y_pred:list, dataset:Dataset, idx:int=0):
-    string_list = ['power','ws','ti','del_flap','del_edge','del_fa','del_ss','del_torsion']
-
-    positions = dataset.__getitem__(idx).pos
-
-    df = pd.DataFrame()
-    for wt, v in enumerate(positions):
-        df_int = pd.DataFrame({'WT':int(wt),'x':[int(v[0])],'y':[int(v[1])]})
-        for r, s in enumerate(string_list):
-            y1 = np.array([np.array(i)[:, r] for i in y])
-            y2 = np.array([np.array(i)[:, r] for i in y_pred])
-
-            if r == 2:
-                y1 = np.array([np.array(i)[:, r]*100 for i in y])
-                y2 = np.array([np.array(i)[:, r]*100 for i in y_pred])
-
-            df1 = pd.DataFrame()
-            df1.index = pd.date_range("2018-01-01", periods=len(y1[:,wt]), freq="1S")
-            df1['true'] = y1[:, wt]
-            df1['pred'] = y2[:, wt]
-            df_mid = pd.DataFrame({'_'.join([s,'true']):[df1.true.values.mean()],
-                                 '_'.join([s,'pred']):[df1.pred.values.mean()]})
-            df_int = pd.concat([df_int,df_mid],axis=1)
-        df = pd.concat([df,df_int],axis=0)
-    df.set_index('WT',inplace=True)
-    return df
 
 if __name__ == "__main__":
     # test the rotate function

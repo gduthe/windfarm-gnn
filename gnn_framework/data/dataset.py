@@ -6,7 +6,6 @@ import itertools
 from torch_geometric.data import Dataset
 import math
 
-
 class GraphFarmsDataset(Dataset):
     """ Dataset comprised of PyWake or HAWC2 farmwide simulations that have been parsed into graphs.
         The dataset should be organized as follows:

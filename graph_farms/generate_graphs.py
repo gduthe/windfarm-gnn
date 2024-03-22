@@ -1,6 +1,6 @@
 from layout_gen import LayoutGenerator
 from inflow_gen import InflowGenerator
-from pywake_processor import simulate_farm
+from pywake_sim import simulate_farm
 from utils import to_graph
 import yaml
 import numpy as np
@@ -33,7 +33,7 @@ def process_one_layout(layout, inflow_df, layout_id, dset_path, node_scada_featu
     wt_coords = layout['coords']
 
     # create an info tuple
-    info = (str(layout['form']), str(layout['min_dist']), str(len(wt_coords)), str(layout_id))
+    info = (str(layout['form']), str(round(layout['min_dist'])), str(len(wt_coords)), str(layout_id))
 
     # choose load model
     if loads_model == 'both':
@@ -127,12 +127,12 @@ def generate_graphs(config_path:str, num_layouts:int, num_inflows:int, dset_path
     config = Box.from_yaml(filename=config_path, Loader=yaml.FullLoader)
 
     # first generate the random layouts
-    layout_generator = LayoutGenerator(config)
+    layout_generator = LayoutGenerator(**config.turbine_settings)
     layouts = layout_generator.generate_layouts(num_layouts)
 
     # then generate the random inflow conditions
-    inflow_generator = InflowGenerator(config)
-    inflows = inflow_generator.generate_all_bcs(num_samples=num_inflows*num_layouts, plot=False)
+    inflow_generator = InflowGenerator(**config)
+    inflows = inflow_generator.generate_inflows(num_samples=num_inflows*num_layouts, plot=False)
     inflow_df = pd.DataFrame(data=inflows)
 
     # loop through the layouts, processing them in parallel
@@ -144,16 +144,16 @@ def generate_graphs(config_path:str, num_layouts:int, num_inflows:int, dset_path
 if __name__ == "__main__":
     # set the args of the script
     parser = argparse.ArgumentParser()
-    parser.add_argument('-rv_config', '-rvc', help="path to config file for the BC random variable config file ", type=str, required=False, default='rv_config.yml')
+    parser.add_argument('-config', '-c', help="path to the config file", type=str, required=False, default='config.yml')
     parser.add_argument('-num_layouts', '-nl', help="number of layouts to generate", type=int, required=False, default=100)
     parser.add_argument('-num_inflows', '-ni', help="number of inflows to generate per layout", type=int, required=False, default=10)
     parser.add_argument('-dset_path', '-d', help="path for the dataset to generate", type=str, required=False, default='./generated_graphs/train_set/')
     parser.add_argument('-node_scada_features', '-f', help="if input node features should be used", action='store_true')
     parser.add_argument('-threads', '-t', help="the number of threads to use", type=int, default=4)
+    parser.add_argument('-connectivity', '-co', help="the kind of connectivity to use: either delaunay, knn, radial, fully_connected, all", type=str, default='delaunay')
     parser.add_argument('-loads_model', '-l', help="the kind of load model to use: either OneWT, TwoWT or both", type=str, default='TwoWT')
-    parser.add_argument('-connectivity', '-c', help="the kind of connectivity to use: either delaunay, knn, radial, fully_connected, all", type=str, default='delaunay')
 
     args = parser.parse_args()
 
-    generate_graphs(args.rv_config, args.num_layouts, args.num_inflows, args.dset_path, args.threads, args.node_features, args.loads_model)
+    generate_graphs(args.config, args.num_layouts, args.num_inflows, args.dset_path, args.threads, args.node_scada_features, args.connectivity, args.loads_model)
 

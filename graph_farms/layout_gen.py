@@ -13,12 +13,29 @@ class LayoutGenerator:
     """ Layout generation class, generates wind wind farm layouts.
         Needs to be a class to obtain a consistent sobol sequence across all the parameters.
         
-        args:
-        config_dict: dict, the settings for the inflow generation
-        num_layouts: int, the number of layouts to generate
+        kwargs:
+        min_turbines: int, the minimum number of turbines in the farm
+        max_turbines: int, the maximum number of turbines in the farm
+        min_rotor_dist: float, the minimum distance between turbines
+        max_rotor_dist: float, the maximum distance between turbines
+        min_farm_lw_ratio: float, the minimum length-width ratio of the farm
+        max_farm_lw_ratio: float, the maximum length-width ratio of the farm
+        rotor_diameter: float, the diameter of the rotor        
     """
-    def __init__(self, config_dict: dict):
-        self.turbine_settings = config_dict['turbine_settings']
+    def __init__(self, **kwargs):
+        # check that kwargs contain the necessary parameters
+        assert {'min_turbines', 'max_turbines', 'min_rotor_dist', 'max_rotor_dist', 'min_farm_lw_ratio', 'max_farm_lw_ratio', 'rotor_diameter'}.issubset(kwargs)
+        
+        # assign the parameters
+        self.min_turbines = kwargs['min_turbines']
+        self.max_turbines = kwargs['max_turbines']
+        self.min_rotor_dist = kwargs['min_rotor_dist']
+        self.max_rotor_dist = kwargs['max_rotor_dist']
+        self.min_farm_lw_ratio = kwargs['min_farm_lw_ratio']
+        self.max_farm_lw_ratio = kwargs['max_farm_lw_ratio']
+        self.rotor_diameter = kwargs['rotor_diameter']
+        
+        # initialize Sobol sampler for consistent sampling across independent parameters
         self.sampler = qmc.Sobol(d=3, scramble=True)
     
     def generate_layouts(self, num_layouts: int):
@@ -27,14 +44,13 @@ class LayoutGenerator:
         samples = self.sampler.random_base2(m=int(np.ceil(np.log2(num_layouts))))[:num_layouts]
         
         # sample the number of turbines and the rotor minimum distance
-        n_points = samples[:, 0] * (self.turbine_settings['max_turbines'] - self.turbine_settings['min_turbines']) + self.turbine_settings['min_turbines']
+        n_points = samples[:, 0] * (self.max_turbines - self.min_turbines) + self.min_turbines
         n_points = n_points.astype(int)
-        rotor_dists = samples[:, 1] * (self.turbine_settings['max_rotor_dist'] - self.turbine_settings['min_rotor_dist']) + self.turbine_settings['min_rotor_dist']
-        min_dists = self.turbine_settings['rotor_diameter'] * rotor_dists
+        rotor_dists = samples[:, 1] * (self.max_rotor_dist - self.min_rotor_dist) + self.min_rotor_dist
+        min_dists = self.rotor_diameter * rotor_dists
         
         # sample the width-length ratio of the farm
-        farm_lw_ratios = samples[:, 2] * (self.turbine_settings['max_farm_lw_ratio'] - self.turbine_settings['min_farm_lw_ratio']) + self.turbine_settings['min_farm_lw_ratio']
-        # farm_lw_ratios = [random.uniform(.5,4) for i in range(num_layouts)]
+        farm_lw_ratios = samples[:, 2] * (self.max_farm_lw_ratio - self.min_farm_lw_ratio) + self.min_farm_lw_ratio
         
         # generate the layouts
         layouts = []
@@ -43,7 +59,7 @@ class LayoutGenerator:
             coords = layout['base_coords']
             
             # pick at random the type of layout
-            form = random.choice(['ellipse', 'triangle', 'circles' 'rectangle'])
+            form = random.choice(['ellipse', 'triangle', 'circles', 'rectangle'])
             if form == 'ellipse':
                 coords = coords[layout['elliptical_mask']]
             elif form == 'triangle':
@@ -58,8 +74,9 @@ class LayoutGenerator:
         return layouts
     
     def generate_random_layout(self, n_points, farm_lw_ratio, min_dist):
-        """ Generate a random wind farm layout given the number of points, the length, the width of the 
-            farm and the minimum distance between turbines.
+        """ Generate one random wind farm layout given the number of points, the length, the width of the 
+            farm and the minimum distance between turbines. Returns a dictionary with the layout and the masks
+            for the different shapes.
         """
         # creating the initial rectangular domain based on farm aspect ratio
         width = np.ceil(n_points * min_dist)
@@ -164,7 +181,7 @@ class LayoutGenerator:
         return output_dict
         
     def plot(self, layout):
-        """ Plotting function to visualize a wind farm layout. """
+        """ Plotting function to visualize a wind farm layout with all the possible shapes. """
         
         matplotlib.rc('text', usetex=True)
         matplotlib.rcParams['font.family'] = 'DejaVu Sans'
@@ -210,10 +227,15 @@ class LayoutGenerator:
         return fig, ax
 
 if __name__ == "__main__":
-    # example usage
-    layout_generator = LayoutGenerator(config_dict=Box.from_yaml(filename='/home/gregory/Documents/PhD/windfarm-gnn/graph_farms/config.yml', Loader=yaml.FullLoader))
-    layouts = layout_generator.generate_layouts(10)
-    layout_generator.plot(layouts[0])
-    layout_generator.plot(layouts[4])
-    layout_generator.plot(layouts[9])
+    # example usage to plot one layout with all the different shapes
+    config = Box.from_yaml(filename='/home/gregory/Documents/PhD/windfarm-gnn/graph_farms/config.yml', Loader=yaml.FullLoader)
+    layout_generator = LayoutGenerator(**config.turbine_settings)
+    layout1 = layout_generator.generate_random_layout(n_points=100, farm_lw_ratio=2, min_dist=5)
+    layout2 = layout_generator.generate_random_layout(n_points=30, farm_lw_ratio=0.5, min_dist=3)
+    layout_generator.plot(layout1)
+    layout_generator.plot(layout2)
     plt.show()
+    
+    # to generate multiple random layouts ready for processing in PyWake
+    layouts = layout_generator.generate_layouts(num_layouts=5)
+    print(layouts)

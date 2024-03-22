@@ -147,6 +147,7 @@ def train(config_path: str):
             pbar.set_postfix({'Train Loss': f'{train_loss:.8f}'})
             pbar.update(1)
     
+    return current_run_dir
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

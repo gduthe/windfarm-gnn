@@ -23,7 +23,7 @@ inflow_settings:
   max_alpha: 0.4994140625             # Maximum shear exponent (from PyWake)
 
 
-# settings for the turbine, default here is IEA 3.4 MW which is the model used in PyWake for loads
+# settings for the turbine and the yaw error, default here is IEA 3.4 MW which is the model used in PyWake for loads
 turbine_settings:
   rotor_diameter: 130                 # Rotor diameter in [m]
   min_rot_rpm: 3.8                    # minimum rotor RPM when the turbine produces power
@@ -38,10 +38,5 @@ turbine_settings:
   max_turbines: 100                   # Maximal number of turbines in farm
   min_farm_lw_ratio: 0.5              # Minimal ratio of farm length to farm width
   max_farm_lw_ratio: 4                # Maximal ratio of farm length to farm width
-
-# settings for the yaw error
-yaw_settings:
-  mu_yaw: 0.0 # mean yaw error for special conditions
-  sig_yaw: 1.5 # standard deviation of yaw error for special conditions
-  yawL: -6 # lower limit of yaw error distribution
-  yawH: 6  # upper limit of yaw error distribution
+  yawL: -6                            # lower limit of yaw error distribution
+  yawH: 6                             # upper limit of yaw error distribution

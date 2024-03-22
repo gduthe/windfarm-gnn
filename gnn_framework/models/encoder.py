@@ -22,10 +22,9 @@ class Encoder(nn.Module):
 
     def __init__(self, **kwargs):
         super().__init__()
-
-        assert {'node_enc_mlp_layers', 'node_latent_dim',
-                'edge_feature_dim', 'edge_enc_mlp_layers', 'edge_latent_dim',
-                'encode_globals', 'glob_enc_mlp_layers', 'glob_latent_dim', 'dropout'}.issubset(kwargs)
+        # make sure the required arguments are provided
+        assert {'glob_feature_dim', 'node_enc_mlp_layers', 'node_latent_dim', 'edge_feature_dim',
+                'edge_enc_mlp_layers', 'edge_latent_dim', 'dropout'}.issubset(kwargs)
         
         # initialize the node, edge and global params encoder MLPs
         self.node_encoder = MLP(kwargs['glob_feature_dim'],

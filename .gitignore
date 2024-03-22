@@ -1,2 +1,5 @@
 __pycache__/
 *.py[cod]
+graph_farms/generated_graphs/
+
+gnn_framework/runs/

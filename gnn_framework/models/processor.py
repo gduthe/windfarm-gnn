@@ -29,7 +29,7 @@ class Processor(nn.Module):
         self.mp_type = kwargs['mp_type']
         self.mp_layers = nn.ModuleList()
         for i in range(kwargs['num_mp_steps']):
-            mp_layer = ProcessorBlock(kwargs['node_latent_dim'], kwargs['edge_latent_dim'], kwargs['glob_latent_dim'], kwargs['mp_type'], kwargs['mp_aggr'])
+            mp_layer = ProcessorBlock(kwargs['node_latent_dim'], kwargs['edge_latent_dim'], kwargs['mp_type'], kwargs['mp_aggr'])
             self.mp_layers.append(mp_layer)
 
         # if using GIN, we need to add a linear layer to combine the history of node embeddings
@@ -39,7 +39,7 @@ class Processor(nn.Module):
         self.dropout = kwargs['dropout']
 
 
-    def forward(self, x, edge_index, edge_attr, globals, batch):
+    def forward(self, x, edge_index, edge_attr):
         # if using GIN, we need to store history of node embeddings:
         if self.mp_type == 'GINE':
             h_list = []
@@ -55,7 +55,7 @@ class Processor(nn.Module):
         
         # update the node latent features through the message-passing
         for layer in self.mp_layers:
-            x = layer(x, edge_index, edge_attr, globals, batch)
+            x = layer(x, edge_index, edge_attr)
             if self.mp_type == 'GINE':
                 h_list.append(x)
 
@@ -76,12 +76,11 @@ class ProcessorBlock(nn.Module):
     
     """
     
-    def __init__(self, node_latent_dim, edge_latent_dim, mp_type='GAT', mp_aggr='mean'):
+    def __init__(self, node_latent_dim, edge_latent_dim, mp_type='GAT', mp_aggr='softmax'):
         super().__init__()
         assert (mp_type in ['GAT', 'GEN', 'GINE'])
-        assert (mp_aggr in ['softmax', 'powermean', 'add', 'mean', 'max'])
-        if mp_type == 'GAT' or mp_type == 'GEN':
-            assert (mp_aggr in ['add', 'mean', 'max'])
+        if mp_type == 'GEN': # gen supports different kinds of aggregation schemes
+            assert (mp_aggr in ['softmax', 'powermean', 'add', 'mean', 'max'])
         
         self.mp_type = mp_type
         
@@ -109,5 +108,5 @@ class ProcessorBlock(nn.Module):
             self.norm.reset_parameters()
         self.conv.reset_parameters()
 
-    def forward(self, x, edge_index, edge_attr, globals, batch):
+    def forward(self, x, edge_index, edge_attr):
         return self.norm(self.conv(x, edge_index, edge_attr))

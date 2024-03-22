@@ -1,2 +1,2 @@
-from .dataset import WindFarmDataset
+from .dataset import GraphFarmsDataset
 from .compute_dataset_stats import compute_dataset_stats

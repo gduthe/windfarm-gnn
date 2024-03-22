@@ -1,0 +1,44 @@
+# settings for executing the run
+run_settings:
+  validate: True                        # if the model should be validated
+  num_t_workers: 2                      # num of workers for the train set dataloader
+  num_v_workers: 2                      # num of workers for the validation set dataloader
+
+# settings that handle the io
+io_settings:
+  train_dataset_path:  '/home/gregory/Documents/PhD/wind-farm-learning-gnn/GNN_framework/datasets/1k_layouts_10_inflows/delaunay'
+  valid_dataset_path:  '../graph_farms/generated_graphs/valid_set/TwoWT/delaunay'
+  run_dir: './runs'                     # path to the save directory for model saving
+  save_epochs: 10                       # number of epochs between model saves
+  pretrained_model: ''                  # leave empty string if not using pretrained model
+
+# training hyperparameters
+hyperparameters:
+  epochs: 150                           # number of epochs
+  start_lr: 1e-3                        # initial learning rate
+  batch_size: 100                       # number of graphs per batch
+  norm_type: 'mean_std'                 # type of normalization to use, either 'mean_std' or 'min_max'
+  rel_wd: True                          # if the relative wind direction should be added as an edge feature
+
+# model architecture settings
+model_settings:
+  node_latent_dim: 256                  # dimension of the latent node features (N)
+  edge_latent_dim: 256                  # dimension of the latent edge features (N)
+  glob_latent_dim: 256                  # dimension of the latent globals features (N)
+
+  encoder_settings:
+    node_enc_mlp_layers: [256, 256]     # list of hidden layer dimensions for the node encoder MLP
+    edge_enc_mlp_layers: [256, 256]     # list of hidden layer dimensions for the edge encoder MLP
+    glob_enc_mlp_layers: [256, 256]     # list of hidden layer dimensions for the globals encoder MLP
+    dropout: 0.0                        # dropout value to set in the encoder
+
+  processor_settings:
+    mp_type: 'GEN'                      # choose the message-passing architecture, choice between GAT, GEN, GINE 
+    num_mp_steps: 4                     # number of message-passing steps (L)
+    dropout: 0.0                        # dropout value to set in the processor
+    mp_aggr: 'softmax'                  # for the GEN architecture, choose from ["softmax", "powermean", "add", "mean", 'max']
+
+  decoder_settings:
+    node_dec_mlp_layers: [256, 256]     # list of hidden layer dimensions for the node decoder MLP
+    glob_dec_mlp_layers: [256, 256]     # list of hidden layer dimensions for the globals encoder MLP
+    dropout: 0.0                        # dropout value to set in the decoder

@@ -37,7 +37,7 @@ class WindFarmGNN(nn.Module):
         data.x, data.edge_attr = self.encoder(data.edge_attr, data.globals, data.batch)
 
         # message-passing processor to update node features of the encoded graph
-        data.x = self.processor(data.x, data.edge_index, data.edge_attr, data.batch)
+        data.x = self.processor(data.x, data.edge_index, data.edge_attr)
 
         # decode the graph after each group to the original space
         data.x = self.decoder(data.x)

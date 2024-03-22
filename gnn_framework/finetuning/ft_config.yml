@@ -1,29 +1,27 @@
 # settings for executing the run
 run_settings:
-  validate: True    # if the model should be validated
-  num_t_workers: 6  # num of workers for the train set dataloader
-  num_v_workers: 6  # num of workers for the validation set dataloader
-  log_experiment: False # if the training experiment should be logged in comet
-  random_seed: 10      # random seed
+  num_t_workers: 2              # num of workers for the train set dataloader
+  num_v_workers: 2              # num of workers for the validation set dataloader
+  random_seed: 10               # random seed
 
 # settings that handle the io
 io_settings:
   comet_project: 'wakeGNN_ft'
   dataset_path:  '/home/gregory/Documents/PhD/wind-farm-learning-gnn/graph_farms/datasets/dtu_lillgrund/lillgrund_hawc2_train/'
-  pretrained_model_dir: './runs/GEN_4_layers_0.0_dropout_0.001_lr_150_epochs_250_latent_dim_09_25_15_05' # path to the pretrained model
-  model_version: 'best' # choose from ['best', 'e{N}' where N is the epoch number]
-  run_dir: './runs'     # path to the save directory for model saving
-  save_epochs: 10       # number of epochs between model saves
+  pretrained_model_dir: 'GEN_4_layers_0.0_dropout_1e-3_lr_150_epochs_256_latent_dim_03_22_12_08' # path to the pretrained model
+  model_version: 'e50'          # choose from ['best', 'e{N}' where N is the epoch number]
+  run_dir: './runs'             # path to the save directory for model saving
+  save_epochs: 10               # number of epochs between model saves
 
 # training hyperparameters
 hyperparameters:
-  epochs: 2             # number of epochs
+  epochs: 2                      # number of epochs
   train_ratio: 0.001666667       # ratio of the dataset to use for training
-  start_lr: 5e-3          # initial learning rate
-  lr_decay_stop: 200      # decay the learning rate up until this epoch
-  batch_size: 10          # number of graphs per batch
-  recompute_stats: True   # if the normalization stats should be recomputed
+  start_lr: 5e-3                 # initial learning rate
+  lr_decay_stop: 200             # decay the learning rate up until this epoch
+  batch_size: 10                 # number of graphs per batch
+  recompute_stats: True          # if the normalization stats should be recomputed
 
 # model architecture settings
 model_settings:
-  ft_method: 'decoder' # choose from ['vanilla', 'LoRA', 'decoder', 'scratch']
+  ft_method: 'LoRA'              # choose from ['vanilla', 'LoRA', 'decoder', 'scratch']

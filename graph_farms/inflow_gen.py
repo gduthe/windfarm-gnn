@@ -8,15 +8,34 @@ class InflowGenerator:
     """ Inflow generation class, generates inflow conditions for a wind farm.
         Needs to be a class to obtain a consistent sobol sequence across all the parameters.
         
-        args:
-        config_dict: dict, the settings for the inflow generation
+        kwargs:
+        inflow_settings: dict containing the following keys:
+            mean_V: mean wind speed [m/s]
+            k_V: Weibull shape parameter
+            Iref: reference turbulence intensity
+            mean_turb_Lscale: mean turbulence length scale
+            min_alpha: minimum shear exponent
+            max_alpha: maximum shear exponent
+            mean_air_temp: mean air temperature [deg. C]
+            COV_air_temp: coefficient of variation of air temperature
+            COV_Dyn_Viscosity: coefficient of variation of dynamic viscosity
+        turbine_settings: dict containing the following keys:
+            cutin_u: cut-in wind speed [m/s]
+            cutout_u: cut-out wind speed [m/s]
+            height_above_ground: height above ground [m]
+            yawL: minimum yaw angle [deg]
+            yawH: maximum yaw angle [deg]
     """
-    def __init__(self, config_dict: dict):
-        self.inflow_settings = config_dict['inflow_settings']
-        self.turbine_settings = config_dict['turbine_settings']
-        self.yaw_settings = config_dict['yaw_settings']
-
-        self.sampler = qmc.Sobol(d=5, scramble=True)
+    def __init__(self, **kwargs):
+        # check that kwargs contain the necessary dicts
+        assert {'inflow_settings', 'turbine_settings'}.issubset(kwargs.keys())
+        
+        # store the configuration settings
+        self.inflow_settings = kwargs['inflow_settings']
+        self.turbine_settings = kwargs['turbine_settings']
+        
+        # initialize Sobol sampler for consistent sampling across independent parameters
+        self.sampler = qmc.Sobol(d=3, scramble=True)
 
     def __gen_wind_velocities(self, sobol_samples: np.array):
         # compute scale param and get shape param
@@ -60,15 +79,14 @@ class InflowGenerator:
         
         return turb, ti, tl
 
-    def __gen_yaw_misalignment(self, sobol_samples: np.array, u: np.array, ti: np.array):
-        # generate yaw misalignment from yaw error
+    def __gen_yaw_misalignment(self, u: np.array, ti: np.array):
+        # generate yaw misalignment error based on wind speed and turbulence intensity
         mu_yaw = np.log(u) - 3
         sig_yaw = 15. / u
         ti = ti
-        bounds = np.array([self.yaw_settings['yawL'], self.yaw_settings['yawH']])
+        bounds = np.array([self.turbine_settings['yawL'], self.turbine_settings['yawH']])
 
-        HFlowAng = np.fromiter(
-            (truncnorm.rvs((bounds[0] - mu_yaw) / sig_yaw, (bounds[1] - mu_yaw) / sig_yaw, loc=mu_yaw,
+        HFlowAng = np.fromiter((truncnorm.rvs((bounds[0] - mu_yaw) / sig_yaw, (bounds[1] - mu_yaw) / sig_yaw, loc=mu_yaw,
                            scale=sig_yaw)), dtype=np.float64)
 
         return HFlowAng
@@ -81,7 +99,7 @@ class InflowGenerator:
         return wd
 
     def __gen_freestream_shear(self, u: np.array):
-        # generate free stream shear exponent
+        # generate free stream shear exponent based on wind speed
         mu_alpha = 0.088 * (np.log(u) - 1)
         sig_alpha = 1.0 / u
         bounds = np.array([self.inflow_settings['min_alpha'], self.inflow_settings['max_alpha']])
@@ -125,18 +143,17 @@ class InflowGenerator:
         
         return airtemp, rho, nu
 
-    def generate_all_bcs(self, num_samples: int, plot=False):
+    def generate_inflows(self, num_samples: int, plot=False):
         # generates all the boundary conditions using sobol sampling 
         samples = self.sampler.random_base2(m=int(np.ceil(np.log2(num_samples))))[:num_samples]
         u = self.__gen_wind_velocities(samples[:, 0])
         wd = self.__gen_wind_direction(samples[:, 1])
         turb, ti, tl = self.__gen_turbulence(u)
-        shearExp = self.__gen_freestream_shear(u)
+        shearexp = self.__gen_freestream_shear(u)
         airtemp, rho, nu = self.__gen_air_properties(samples[:, 2])
-        hflowang = self.__gen_yaw_misalignment(samples[:, 3], u, ti)
-        plt.show()
-
-        output_dict = {'u': u, 'turb': turb, 'ti': ti, 'tl': tl, 'shearexp': shearExp, 'airtemp': airtemp,
+        hflowang = self.__gen_yaw_misalignment(u, ti)
+        
+        output_dict = {'u': u, 'turb': turb, 'ti': ti, 'tl': tl, 'shearexp': shearexp, 'airtemp': airtemp,
                        'rho': rho, 'nu': nu, 'hflowang': hflowang, 'wd': wd}
         if plot:
             self.plot(output_dict)
@@ -171,11 +188,11 @@ class InflowGenerator:
         axs[0].set_title('Turbulence vs. Wind Speed')
         sns.scatterplot(x=u, y=output_dict['ti'], ax=axs[1])
         axs[1].set_xlabel('Wind Speed [m/s]')
-        axs[1].set_ylabel('Turbulence Intensity []')
+        axs[1].set_ylabel('Turbulence Intensity [\%]')
         axs[1].set_title('Turbulence Intensity vs. Wind Speed')
         sns.scatterplot(x=u, y=output_dict['tl'], ax=axs[2])
         axs[2].set_xlabel('Wind Speed [m/s]')
-        axs[2].set_ylabel('Turbulence Length [% Chord L]')
+        axs[2].set_ylabel('Turbulence Length [\% Chord L]')
         axs[2].set_title('Turbulence Length vs. Wind Speed')
         for ax in axs:
             ax.xaxis.set_tick_params(which='major', size=10, width=2, direction='in', top='off')
@@ -282,8 +299,7 @@ if __name__ == "__main__":
     config_dict = {
         'inflow_settings': {'mean_V': 8.5, 'k_V': 2.0, 'Iref': 0.16, 'mean_turb_Lscale': 0.1, 'min_alpha': 0.05,
                             'max_alpha': 0.2, 'mean_air_temp': 15.0, 'COV_air_temp': 0.02, 'COV_Dyn_Viscosity': 0.01},
-        'turbine_settings': {'cutin_u': 3.0, 'cutout_u': 25.0, 'height_above_ground': 90.0},
-        'yaw_settings': {'yawL': -30.0, 'yawH': 30.0}
+        'turbine_settings': {'cutin_u': 3.0, 'cutout_u': 25.0, 'height_above_ground': 90.0, 'yawL': -30.0, 'yawH': 30.0}
     }
-    inflow_gen = InflowGenerator(config_dict)
-    inflow_gen.generate_all_bcs(num_samples=1000, plot=True)
+    inflow_gen = InflowGenerator(**config_dict)
+    inflow_gen.generate_inflows(num_samples=1000, plot=True)
