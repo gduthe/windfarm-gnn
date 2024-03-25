@@ -24,7 +24,7 @@ class LayoutGenerator:
     """
     def __init__(self, **kwargs):
         # check that kwargs contain the necessary parameters
-        assert {'min_turbines', 'max_turbines', 'min_rotor_dist', 'max_rotor_dist', 'min_farm_lw_ratio', 'max_farm_lw_ratio', 'rotor_diameter'}.issubset(kwargs)
+        assert {'min_turbines', 'max_turbines', 'min_rotor_dist', 'max_rotor_dist', 'min_farm_lw_ratio', 'max_farm_lw_ratio', 'rotor_diameter', 'max_yaw', 'min_yaw'}.issubset(kwargs)
         
         # assign the parameters
         self.min_turbines = kwargs['min_turbines']
@@ -34,6 +34,8 @@ class LayoutGenerator:
         self.min_farm_lw_ratio = kwargs['min_farm_lw_ratio']
         self.max_farm_lw_ratio = kwargs['max_farm_lw_ratio']
         self.rotor_diameter = kwargs['rotor_diameter']
+        self.max_yaw_angle = kwargs['max_yaw']
+        self.min_yaw_angle = kwargs['min_yaw']
         
         # initialize Sobol sampler for consistent sampling across independent parameters
         self.sampler = qmc.Sobol(d=3, scramble=True)
@@ -68,8 +70,10 @@ class LayoutGenerator:
                 coords = coords[layout['circles_mask']]
             else:
                 coords = coords
+
+            yaw_angles = self.generate_random_yaw_angles(len(coords))
             
-            layouts.append({'coords': coords, 'form': form, 'min_dist': min_dists[i]})
+            layouts.append({'coords': coords, 'form': form, 'min_dist': min_dists[i], 'yaw_angles': yaw_angles})
             
         return layouts
     
@@ -179,6 +183,10 @@ class LayoutGenerator:
                        'alpha': alpha}
 
         return output_dict
+    
+    def generate_random_yaw_angles(self, n_points):
+        """ Generate random yaw angles for the turbines in the farm. """
+        return np.random.uniform(self.min_yaw_angle, self.max_yaw_angle, n_points)
         
     def plot(self, layout):
         """ Plotting function to visualize a wind farm layout with all the possible shapes. """

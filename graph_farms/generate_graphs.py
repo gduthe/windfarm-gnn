@@ -32,6 +32,9 @@ def process_one_layout(layout, inflow_df, layout_id, dset_path, node_scada_featu
     # extract coords of the wind turbines from layout
     wt_coords = layout['coords']
 
+    # extract yaw angles of the wind turbines from layout
+    wt_yaws = layout['yaw_angles']
+
     # create an info tuple
     info = (str(layout['form']), str(round(layout['min_dist'])), str(len(wt_coords)), str(layout_id))
 
@@ -53,7 +56,7 @@ def process_one_layout(layout, inflow_df, layout_id, dset_path, node_scada_featu
         # loop over the loads model (used only if both is selected)
         for loads_method in loads_list:
             # simulate using pywake
-            power, loads = simulate_farm(inflow_df, wt_coords, loads_method)
+            power, loads, wt_yaws = simulate_farm(inflow_df, wt_coords, wt_yaws, loads_method)
 
             # loop over the connectivity type saving each in a different folder
             for c in connectivity_list:
@@ -72,11 +75,12 @@ def process_one_layout(layout, inflow_df, layout_id, dset_path, node_scada_featu
 
                         if node_scada_features:
                             g.x = torch.Tensor(np.array([power.Power.values[:, i], power.WS_eff.values[:, i],
-                                                         power.TI_eff.values[:, i]])).T
+                                                         power.TI_eff.values[:, i], wt_yaws[:, i]])).T
                             t = torch.Tensor()
                             for s in loads.sensor.values:
                                 t = torch.cat((t, torch.Tensor(np.array([loads.sel(sensor=s).DEL.values[:, i]]))))
                         else:
+                            g.x = torch.Tensor(np.array([wt_yaws[:, i]])).T
                             t = torch.Tensor(np.array([power.Power.values[:, i], power.WS_eff.values[:, i],
                                                        power.TI_eff.values[:, i]]))
                             for s in loads.sensor.values:

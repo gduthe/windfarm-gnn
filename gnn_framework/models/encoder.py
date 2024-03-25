@@ -1,5 +1,6 @@
 import torch.nn as nn
 from .basics import MLP
+import torch
 
 class Encoder(nn.Module):
     ''' Encoder class, uses MLPs for each graph attribute.
@@ -27,15 +28,17 @@ class Encoder(nn.Module):
                 'edge_enc_mlp_layers', 'edge_latent_dim', 'dropout'}.issubset(kwargs)
         
         # initialize the node, edge and global params encoder MLPs
-        self.node_encoder = MLP(kwargs['glob_feature_dim'],
-                                kwargs['node_enc_mlp_layers'] + [kwargs['node_latent_dim']],
-                                activation_type='ReLU', norm_type='LayerNorm', dropout=kwargs['dropout'])
-        self.edge_encoder = MLP(kwargs['edge_feature_dim'],
-                                kwargs['edge_enc_mlp_layers'] + [kwargs['edge_latent_dim']],
-                                activation_type='ReLU', norm_type='LayerNorm', dropout=kwargs['dropout'])
+        # In this case, we encode global attributes and yaw angles to both node and global features
+        self.node_global_encoder    = MLP(kwargs['glob_feature_dim'] + kwargs['node_feature_dim'],
+                                          kwargs['node_enc_mlp_layers'] + [kwargs['node_latent_dim']],
+                                          activation_type='ReLU', norm_type='LayerNorm', dropout=kwargs['dropout'])
+        self.edge_encoder           = MLP(kwargs['edge_feature_dim'],
+                                          kwargs['edge_enc_mlp_layers'] + [kwargs['edge_latent_dim']],
+                                          activation_type='ReLU', norm_type='LayerNorm', dropout=kwargs['dropout'])
 
-    def forward(self, edge_attr, global_attr, batch):
-        x_enc = self.node_encoder(global_attr)[batch] # the batch index is needed for multi-graph training
+    def forward(self, node_attr, edge_attr, global_attr, batch):
+        x_augmented = torch.cat([global_attr[batch], node_attr], dim=1)
+        node_attr_enc = global_attr_enc = self.node_global_encoder(x_augmented) # the batch index is needed for multi-graph training
         edge_attr_enc = self.edge_encoder(edge_attr)
 
-        return x_enc, edge_attr_enc
+        return node_attr_enc, edge_attr_enc, global_attr_enc
