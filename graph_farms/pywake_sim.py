@@ -8,7 +8,7 @@ from py_wake.wind_farm_models import PropagateDownwind
 from py_wake.turbulence_models import CrespoHernandez
 from py_wake.deflection_models import JimenezWakeDeflection
 from py_wake.rotor_avg_models import RotorCenter, GaussianOverlapAvgModel
-from py_wake.wind_turbines.power_ct_functions import PowerCtFunctionList, PowerCtTabular
+from py_wake.wind_turbines.power_ct_functions import PowerCtFunctionList, PowerCtTabular, default_additional_models
 from py_wake.site._site import UniformSite
 import tensorflow as tf
 import os
@@ -51,10 +51,15 @@ def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, yaw_angles: np
 
     wt = IEA34_130_1WT_Surrogate() if loads_method == 'OneWT' else IEA34_130_2WT_Surrogate()
 
+    # Small patch to manually add power dependency on yaw alignment to the surrogate model
+    wt.powerCtFunction.model_lst = default_additional_models # Default yaw misalignment model and air density model
+    for model in wt.powerCtFunction.model_lst:
+        wt.powerCtFunction.add_inputs(model.required_inputs, model.optional_inputs) # Add required and optional inputs to the powerCtFunction
+
     wt.powerCtFunction = PowerCtFunctionList(
         key = 'operating',
         powerCtFunction_lst = [
-            PowerCtTabular(ws=[0, 100], power=[0, 0], power_unit='w', ct=[0, 0]), # Turbine is 'off'
+            PowerCtTabular(ws = [0, 100], power = [0, 0], power_unit = 'w', ct = [0, 0]), # Turbine is 'off'
             wt.powerCtFunction                                                    # Turbine is 'on'
         ],
         default_value = 1 # Default value is the turbine is 'on'
