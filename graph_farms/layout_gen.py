@@ -24,7 +24,7 @@ class LayoutGenerator:
     """
     def __init__(self, **kwargs):
         # check that kwargs contain the necessary parameters
-        assert {'min_turbines', 'max_turbines', 'min_rotor_dist', 'max_rotor_dist', 'min_farm_lw_ratio', 'max_farm_lw_ratio', 'rotor_diameter', 'max_yaw', 'min_yaw'}.issubset(kwargs)
+        assert {'min_turbines', 'max_turbines', 'min_rotor_dist', 'max_rotor_dist', 'min_farm_lw_ratio', 'max_farm_lw_ratio', 'rotor_diameter', 'max_yaw', 'min_yaw', 'probability_operating_on', 'probability_operating_off'}.issubset(kwargs)
         
         # assign the parameters
         self.min_turbines = kwargs['min_turbines']
@@ -36,6 +36,8 @@ class LayoutGenerator:
         self.rotor_diameter = kwargs['rotor_diameter']
         self.max_yaw_angle = kwargs['max_yaw']
         self.min_yaw_angle = kwargs['min_yaw']
+        self.probability_operating_on = kwargs['probability_operating_on']
+        self.probability_operating_off = kwargs['probability_operating_off']
         
         # initialize Sobol sampler for consistent sampling across independent parameters
         self.sampler = qmc.Sobol(d=3, scramble=True)
@@ -72,8 +74,9 @@ class LayoutGenerator:
                 coords = coords
 
             yaw_angles = self.generate_random_yaw_angles(len(coords))
+            operating_modes = self.generate_random_operating_modes(len(coords))
             
-            layouts.append({'coords': coords, 'form': form, 'min_dist': min_dists[i], 'yaw_angles': yaw_angles})
+            layouts.append({'coords': coords, 'form': form, 'min_dist': min_dists[i], 'yaw_angles': yaw_angles, 'operating_modes': operating_modes})
             
         return layouts
     
@@ -187,6 +190,10 @@ class LayoutGenerator:
     def generate_random_yaw_angles(self, n_points):
         """ Generate random yaw angles for the turbines in the farm. """
         return np.random.uniform(self.min_yaw_angle, self.max_yaw_angle, n_points)
+    
+    def generate_random_operating_modes(self, n_points):
+        """ Generate random operating modes for the turbines in the farm. """
+        return np.random.choice([0, 1], n_points, p=[self.probability_operating_off, self.probability_operating_on])
         
     def plot(self, layout):
         """ Plotting function to visualize a wind farm layout with all the possible shapes. """
