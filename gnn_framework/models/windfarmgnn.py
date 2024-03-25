@@ -50,7 +50,7 @@ class WindFarmGNN(nn.Module):
     
 
     def compute_loss(self, data):
-        # this function computes the loss for a given batch of data
+        # computes the loss for a given batch of data
         node_loss = nn.functional.mse_loss(data.x, data.y)
         return node_loss
     

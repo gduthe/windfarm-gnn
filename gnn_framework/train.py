@@ -105,8 +105,9 @@ def train(config_path: str):
         # compute the epoch training loss
         train_loss = train_loss / len(train_loader)
 
-        # step the learning rate scheduler 
-        scheduler.step()
+        # step the scheduler
+        if epoch < config.hyperparameters.lr_decay_stop:
+            scheduler.step()
 
         # save the trained model every n epochs
         if (epoch + 1) % config.io_settings.save_epochs == 0:

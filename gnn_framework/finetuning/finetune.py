@@ -3,15 +3,35 @@ from torch.utils.data import random_split
 import torch.optim as optim
 from torch_geometric.loader import DataLoader
 from models import WindFarmGNN
-from minlora import add_lora, get_lora_state_dict, get_lora_params
-from dataset import GraphFarmsDataset, compute_dataset_stats
-from utils import recursively_merge_dicts
+from .minlora import add_lora, get_lora_state_dict, get_lora_params
+from data import GraphFarmsDataset, compute_dataset_stats
 from box import Box
 import yaml
 import os
 import argparse
 from tqdm import tqdm
 from datetime import datetime
+from collections.abc import MutableMapping
+
+def recursively_merge_dicts(d1, d2):
+    '''
+    Update two dicts of dicts recursively, 
+    if either mapping has leaves that are non-dicts, 
+    the second's leaf overwrites the first's.
+    
+    args:
+    d1: dict, the first dictionary
+    d2: dict, the second dictionary
+    '''
+    for k, v in d1.items():
+        if k in d2:
+            # this next check is the only difference!
+            if all(isinstance(e, MutableMapping) for e in (v, d2[k])):
+                d2[k] = recursively_merge_dicts(v, d2[k])
+            # we could further check types and merge as appropriate here.
+    d3 = d1.copy()
+    d3.update(d2)
+    return d3
 
 def finetune(ft_config_path: str): 
     """ The main finetuning function of the WindFarmGNN model. This function loads in a pretrained model 

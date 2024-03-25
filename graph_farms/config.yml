@@ -3,8 +3,8 @@ inflow_settings:
   mean_V: 10                          # Mean wind speed
   k_V: 2.0                            # Shape factor of a Weibull distribution of the wind speed
   Iref: 0.16                          # Iref parameter
-  Vmin: 3                             # Minimum simulated wind speed <Vin
-  Vmax: 25                            # Maximum simulated wind speed >Vout
+  Vmin: 1                             # Minimum simulated wind speed <Vin
+  Vmax: 30                            # Maximum simulated wind speed >Vout
   mean_turb_Lscale: 0.2               # Mean value of turbulence length scale as percent of chord length, at the inlet grid
   COV_turb_Lscale: 0.01               # Coefficient of variation (COV) of turbulence length scale
   COV_Re: 0.02                        # COV of the Reynolds number. Variations due to atmospheric pressure, temperature and humidity
