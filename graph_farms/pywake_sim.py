@@ -2,17 +2,36 @@ import pandas as pd
 import numpy as np
 import xarray as xr
 from py_wake.deficit_models import NiayifarGaussianDeficit
-from py_wake.examples.data.iea34_130rwt._iea34_130rwt import IEA34_130_2WT_Surrogate, IEA34_130_1WT_Surrogate
+from py_wake.examples.data.iea34_130rwt._iea34_130rwt import IEA34_130_Base, IEA34_130_2WT_Surrogate, ThreeRegionLoadSurrogates, IEA34_130_PowerCtSurrogate
+from py_wake.utils.tensorflow_surrogate_utils import TensorflowSurrogate
+from py_wake.examples.data import example_data_path
 from py_wake.superposition_models import LinearSum
 from py_wake.wind_farm_models import PropagateDownwind
 from py_wake.turbulence_models import CrespoHernandez
 from py_wake.site._site import UniformSite
 import tensorflow as tf
 import os
+from pathlib import Path
 
 # ignore tensorflow warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+
+
+# we redefine here the OneWT surrogate, as we need to override the TI input
+# in the original PyWake IEA34_130_1WT_Surrogate implementation TI_eff is set, which does not override the TI input
+class IEA34_130_1WT_Surrogate(IEA34_130_Base):
+
+    def __init__(self):
+        surrogate_path = Path(example_data_path) / 'iea34_130rwt' / 'one_turbine'
+        loadFunction = ThreeRegionLoadSurrogates(
+            [[TensorflowSurrogate(surrogate_path / s, n) for n in self.set_names] for s in self.load_sensors],
+            input_parser=lambda ws, TI=.1, Alpha=0: [ws, TI, Alpha])
+        powerCtFunction = IEA34_130_PowerCtSurrogate(
+            surrogate_path,
+            input_parser=lambda ws, TI, Alpha=0: [ws, TI, Alpha])
+        IEA34_130_Base.__init__(self, powerCtFunction=powerCtFunction, loadFunction=loadFunction)
+
 
 def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, loads_method:str):
     """ Function to simulate the power and loads of a wind farm given the inflow conditions and the
@@ -38,10 +57,8 @@ def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, loads_method:s
     
     if loads_method == 'OneWT':
         wt = IEA34_130_1WT_Surrogate()
-        var_kwargs = {'TI_eff':ti/100} # TI_eff is used in OneWT
     else:
         wt = IEA34_130_2WT_Surrogate()
-        var_kwargs = {'TI':ti/100} # TI is used in TwoWT
 
     wf_model = PropagateDownwind(site, wt, wake_deficitModel=NiayifarGaussianDeficit(),
                                  superpositionModel=LinearSum(),
@@ -50,15 +67,13 @@ def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, loads_method:s
     farm_sim = wf_model(x, y,  # wind turbine positions
                             wd=wd,  # Wind direction 'time series'
                             ws=ws,  # Wind speed 'time series'
+                            TI=ti/100,  # Turbulence intensity 'time series'
                             yaw=yaw,  # yaw angles 'time series'
                             Alpha=alpha, # shear exponent 'time series'
                             time=True,  # time stamps
-                            **var_kwargs)
+                            )
     
     farm_sim['duration'] = farm_sim.time.values
-    sim_loads = farm_sim.loads(method=loads_method, normalize_probabilities=True)
-    
-    if loads_method == 'OneWT':
-        farm_sim['TI'] = ti/100
+    sim_loads = farm_sim.loads(method=loads_method)
     
     return farm_sim, sim_loads
