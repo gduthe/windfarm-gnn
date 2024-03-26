@@ -45,7 +45,7 @@ def back_drop(df, x_prm, y_prm, bins, percentile=10):
             result.append(np.nan)
     return result
 
-def plot_vs_x(dataset:Dataset, y:list, y_pred, x_axis:str, turb:int, layout_idx:int, num_inflows_per_layout:int, dpi=600, y_pred2=None,  
+def plot_vs_x(dataset:Dataset, y:list, y_pred, x_axis:str, turb:list, layout_idx:int, num_inflows_per_layout:int, dpi=600, y_pred2=None,  
               ws_filter=None, wd_filter=None, labels=None, shaded_surfaces=[(25, 75), (10, 90)], show_farm=False, plot_graph=True):
     """ Plot the results of ground truth vs predicted values for a given turbine of a given layout from a dataset.
 
@@ -54,7 +54,7 @@ def plot_vs_x(dataset:Dataset, y:list, y_pred, x_axis:str, turb:int, layout_idx:
         y: list, the ground truth values
         y_pred: list, the predicted values
         x_axis: str, the x axis to use for the plot either 'ws' or 'wd', wind direction results in polar plots
-        turb: int, the turbine to plot for
+        turb: list, the list of turbines to plot for
         layout_idx: int, the layout index to plot (index of the layout in the dataset)
         num_inflows_per_layout: int, number of inflows per layout for this dataset
         dpi: int, the dpi of the plot
@@ -105,7 +105,10 @@ def plot_vs_x(dataset:Dataset, y:list, y_pred, x_axis:str, turb:int, layout_idx:
         graph = dataset.__getitem__(start_idx)
         ax_list = axs.values()
     else:
-        fig, axs = plt.subplots(4, 2, figsize=(8, 12), dpi=dpi)
+        if x_axis == 'wd':
+            fig, axs = plt.subplots(4, 2, figsize=(8, 12), dpi=dpi, subplot_kw={'projection': 'polar'})
+        else:
+            fig, axs = plt.subplots(4, 2, figsize=(8, 12), dpi=dpi)
         ax_list = axs.flatten()
 
     string_list = ['Power [$kW$]', 'Wind speed [$m.s^{-1}$]', 'Turbulence intensity [$\%$]',

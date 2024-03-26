@@ -1,7 +1,7 @@
-from layout_gen import LayoutGenerator
-from inflow_gen import InflowGenerator
-from pywake_sim import simulate_farm
-from utils import to_graph
+from .layout_gen import LayoutGenerator
+from .inflow_gen import InflowGenerator
+from .pywake_sim import simulate_farm
+from .utils import to_graph
 import yaml
 import numpy as np
 import argparse
@@ -97,7 +97,7 @@ def process_one_layout(layout, inflow_df, layout_id, dset_path, node_scada_featu
 
 
 def generate_graphs(config_path:str, num_layouts:int, num_inflows:int, dset_path:str, num_threads=1, node_scada_features=False,
-                    connectivity='delaunay', loads_model='TwoWT'):
+                    connectivity='delaunay', loads_model='TwoWT', fixed_wd=None, fixed_ws=None, fixed_ti=None):
     """ Main function to generate a bunch of wind farm graphs in parallel for a number of layouts and inflow conditions.
         The function will save the graphs in zip files in the given dataset path with the following structure, which depends on selected
         loads model and connectivity:
@@ -122,6 +122,9 @@ def generate_graphs(config_path:str, num_layouts:int, num_inflows:int, dset_path
         node_scada_features: bool, if the graphs should have node features which 'replicate' SCADA (power, ws, ti)
         connectivity: str, the kind of connectivity to use: either delaunay, knn, radial, fully_connected, all
         loads_model: str, the kind of load model to use: either OneWT, TwoWT or both
+        fixed_wd: float, if a fixed wind direction should be used
+        fixed_ws: float, if a fixed wind speed should be used
+        fixed_ti: float, if a fixed turbulence intensity should be used
     """
     # load the config
     config = Box.from_yaml(filename=config_path, Loader=yaml.FullLoader)
@@ -134,11 +137,21 @@ def generate_graphs(config_path:str, num_layouts:int, num_inflows:int, dset_path
     inflow_generator = InflowGenerator(**config)
     inflows = inflow_generator.generate_inflows(num_samples=num_inflows*num_layouts, plot=False)
     inflow_df = pd.DataFrame(data=inflows)
+    
+    if fixed_wd is not None:
+        inflow_df['wd'] = fixed_wd
+    if fixed_ws is not None:
+        inflow_df['u'] = fixed_ws
+    if fixed_ti is not None:
+        inflow_df['ti'] = fixed_ti
+    
 
     # loop through the layouts, processing them in parallel
     Parallel(n_jobs=num_threads)(delayed(process_one_layout)
         (layout, inflow_df.iloc[list(range(i*num_inflows, i*num_inflows + num_inflows))], str(i).zfill(len(str(num_layouts))),
          dset_path, node_scada_features, connectivity, loads_model) for i, layout in enumerate(layouts))
+    
+    print('Finished generating {} graphs ({} layouts x {} inflows)!'.format(num_layouts*num_inflows, num_layouts, num_inflows))
 
 
 if __name__ == "__main__":

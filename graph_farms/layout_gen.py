@@ -1,5 +1,5 @@
 import numpy as np
-from utils import rotate, is_inside_triangle
+from .utils import rotate, is_inside_triangle
 import random
 from scipy.stats import qmc
 from matplotlib.patches import Rectangle

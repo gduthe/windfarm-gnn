@@ -35,11 +35,13 @@ def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, loads_method:s
     alpha = inflow_df.shearexp
     x = positions[:, 0]
     y = positions[:, 1]
-
+    
     if loads_method == 'OneWT':
         wt = IEA34_130_1WT_Surrogate()
+        var_kwargs = {'TI_eff':ti/100} # TI_eff is used in OneWT
     else:
         wt = IEA34_130_2WT_Surrogate()
+        var_kwargs = {'TI':ti/100} # TI is used in TwoWT
 
     wf_model = PropagateDownwind(site, wt, wake_deficitModel=NiayifarGaussianDeficit(),
                                  superpositionModel=LinearSum(),
@@ -48,11 +50,15 @@ def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, loads_method:s
     farm_sim = wf_model(x, y,  # wind turbine positions
                             wd=wd,  # Wind direction 'time series'
                             ws=ws,  # Wind speed 'time series'
-                            TI= ti/100,  # Turbulence intensity 'time series'
+                            yaw=yaw,  # yaw angles 'time series'
                             Alpha=alpha, # shear exponent 'time series'
-                            yaw=yaw,  # yaw angle 'time series'
-                            time=True)  # time stamps
+                            time=True,  # time stamps
+                            **var_kwargs)
+    
     farm_sim['duration'] = farm_sim.time.values
-    sim_loads = farm_sim.loads(method=loads_method)
+    sim_loads = farm_sim.loads(method=loads_method, normalize_probabilities=True)
+    
+    if loads_method == 'OneWT':
+        farm_sim['TI'] = ti/100
     
     return farm_sim, sim_loads
