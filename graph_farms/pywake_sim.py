@@ -56,11 +56,12 @@ def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, yaw_angles: np
     for model in wt.powerCtFunction.model_lst:
         wt.powerCtFunction.add_inputs(model.required_inputs, model.optional_inputs) # Add required and optional inputs to the powerCtFunction
 
+    # Adding operating modes to the powerCtFunction, allowing the turbine to be 'off' or 'on'
     wt.powerCtFunction = PowerCtFunctionList(
         key = 'operating',
         powerCtFunction_lst = [
-            PowerCtTabular(ws = [0, 100], power = [0, 0], power_unit = 'w', ct = [0, 0]), # Turbine is 'off'
-            wt.powerCtFunction                                                    # Turbine is 'on'
+            PowerCtTabular(ws = [0, 100], power = [0, 0], power_unit = 'w', ct = [0, 0]),   # Turbine is 'off'
+            wt.powerCtFunction                                                              # Turbine is 'on'
         ],
         default_value = 1 # Default value is the turbine is 'on'
     )
@@ -71,6 +72,14 @@ def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, yaw_angles: np
                                  deflectionModel=JimenezWakeDeflection(),
                                  superpositionModel=SquaredSum(),
                                  turbulenceModel=CrespoHernandez())
+    
+    if loads_method == 'OneWT':
+        # Another small patch to prevent the OneWT load method from throwing a tantrum when 'operating', 'tilt' and 'yaw' are passed
+        def loads(self, ws, **kwargs):
+            for key in ['operating', 'tilt', 'yaw']:
+                kwargs.pop(key, None)
+            return self.loadFunction(ws, **kwargs)
+        wf_model.windTurbines.loads = lambda ws, **kwargs: loads(wf_model.windTurbines, ws, **kwargs)
 
     farm_sim = wf_model(x, y,  # wind turbine positions
                         wd=wd,  # Wind direction time series
