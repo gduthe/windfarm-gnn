@@ -16,6 +16,7 @@ io_settings:
 hyperparameters:
   epochs: 150                           # number of epochs
   start_lr: 1e-3                        # initial learning rate
+  lr_decay_stop: 200                    # decay the learning rate up until this epoch
   batch_size: 100                       # number of graphs per batch
   norm_type: 'mean_std'                 # type of normalization to use, either 'mean_std' or 'min_max'
   rel_wd: True                          # if the relative wind direction should be added as an edge feature

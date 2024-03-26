@@ -2,21 +2,20 @@
 run_settings:
   num_t_workers: 2              # num of workers for the train set dataloader
   num_v_workers: 2              # num of workers for the validation set dataloader
-  random_seed: 10               # random seed
+  random_seed: 10               # fixed random seed
 
 # settings that handle the io
 io_settings:
-  comet_project: 'wakeGNN_ft'
   dataset_path:  '/home/gregory/Documents/PhD/wind-farm-learning-gnn/graph_farms/datasets/dtu_lillgrund/lillgrund_hawc2_train/'
-  pretrained_model_dir: 'GEN_4_layers_0.0_dropout_1e-3_lr_150_epochs_256_latent_dim_03_22_12_08' # path to the pretrained model
+  pretrained_model_dir: './runs/GEN_4_layers_0.0_dropout_1e-3_lr_150_epochs_256_latent_dim_03_22_12_08' # path to the pretrained model
   model_version: 'e50'          # choose from ['best', 'e{N}' where N is the epoch number]
   run_dir: './runs'             # path to the save directory for model saving
   save_epochs: 10               # number of epochs between model saves
 
 # training hyperparameters
 hyperparameters:
-  epochs: 2                      # number of epochs
-  train_ratio: 0.001666667       # ratio of the dataset to use for training
+  epochs: 2100                   # number of epochs
+  train_ratio: 0.8               # ratio of the dataset to use for training
   start_lr: 5e-3                 # initial learning rate
   lr_decay_stop: 200             # decay the learning rate up until this epoch
   batch_size: 10                 # number of graphs per batch
