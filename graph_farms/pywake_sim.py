@@ -43,11 +43,11 @@ def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, yaw_angles: np
     # Instead of using the 'yaw noise', as in the original model, we use exact yaw angles
     # Since we are simulating a range of inflow conditions, we need to repeat the yaw angles
     # yaw = np.repeat(yaw_angles[np.newaxis, :], len(ws), axis=0) # yaw angles constant for all ws
-    yaw = np.vstack([np.random.permutation(yaw_angles) for _ in range(len(ws))]) # yaw angles shuffled for all ws
+    yaw = np.vstack([np.random.permutation(yaw_angles) for _ in range(len(ws))]).reshape((len(yaw_angles), len(ws), 1)) # yaw angles shuffled for all ws
 
     # Since we are simulating a range of inflow conditions, we need to repeat the operating modes
     # operating_modes = np.repeat(operating_modes[np.newaxis, :], len(ws), axis=0) # operating modes constant for all ws
-    operating_modes = np.vstack([np.random.permutation(operating_modes) for _ in range(len(ws))]) # operating modes shuffled for all ws
+    operating_modes = np.vstack([np.random.permutation(operating_modes) for _ in range(len(ws))]).reshape((len(yaw_angles), len(ws), 1)) # operating modes shuffled for all ws
 
     wt = IEA34_130_1WT_Surrogate() if loads_method == 'OneWT' else IEA34_130_2WT_Surrogate()
 
@@ -93,5 +93,8 @@ def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, yaw_angles: np
     
     farm_sim['duration'] = farm_sim.time.values
     sim_loads = farm_sim.loads(method=loads_method)
+
+    # PyWake's OneWT calculation does not return the series of TI values, so we need to add it manually
+    farm_sim['TI'] = ti/100
 
     return farm_sim, sim_loads, yaw, operating_modes
