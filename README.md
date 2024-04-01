@@ -1,6 +1,6 @@
 # Wind Farm GNNs
 
-This repository is dedicated to the development and exploration of multivariate, system-wide approaches based on Graph Neural Networks (GNN) for predicting wind farm-wide power, local flow variables and loads. Our models aim to predict average power, rotor averaged wind speed and effective turbulence intensity, along with damage equivalent moments (DEL) in blade flap- and edgewise directions, tower top tortional and bottom fore-aft and side-to-side. The use of GNNs allows for a layout-agnostic multivariate model.
+This repository is dedicated to the development of Graph Neural Networks (GNN) for predicting wind farm-wide power, local flow variables and loads. Our models aim to predict average power, rotor averaged wind speed and effective turbulence intensity, along with damage equivalent moments (DEL) in blade flap- and edgewise directions, tower top tortional and bottom fore-aft and side-to-side. The use of GNNs allows for a layout-agnostic multivariate model.
 
 ## Features
 - **Robust Data Generation**: We use Sobol sampling to generate robust datasets with realistic inflow conditions and randomized layouts.

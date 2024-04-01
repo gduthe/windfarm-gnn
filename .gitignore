@@ -4,4 +4,4 @@ graph_farms/generated_graphs/
 
 gnn_framework/runs/
 
-/GNN_framework/credentials.yml
+*.zip

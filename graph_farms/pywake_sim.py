@@ -12,6 +12,7 @@ from py_wake.wind_turbines.power_ct_functions import PowerCtFunctionList, PowerC
 from py_wake.site._site import UniformSite
 import tensorflow as tf
 import os
+from pathlib import Path
 
 # ignore tensorflow warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
