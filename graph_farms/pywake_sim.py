@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import xarray as xr
 from py_wake.deficit_models import NiayifarGaussianDeficit
 from py_wake.examples.data.iea34_130rwt._iea34_130rwt import IEA34_130_Base, IEA34_130_2WT_Surrogate, ThreeRegionLoadSurrogates, IEA34_130_PowerCtSurrogate
 from py_wake.utils.tensorflow_surrogate_utils import TensorflowSurrogate
@@ -44,7 +43,6 @@ def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, loads_method:s
         loads_method: str, the kind of load model to use: either OneWT or TwoWT
     """
     assert (loads_method in ['OneWT', 'TwoWT'])
-    xr.set_options(display_expand_data=False)
     site = UniformSite()
 
     ws = inflow_df.u
@@ -75,5 +73,4 @@ def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, loads_method:s
     
     farm_sim['duration'] = farm_sim.time.values
     sim_loads = farm_sim.loads(method=loads_method)
-    
     return farm_sim, sim_loads
