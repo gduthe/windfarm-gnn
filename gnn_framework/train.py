@@ -130,7 +130,6 @@ def train(config_path: str):
             # get the full dataset validation loss for this epoch
             validation_loss = validation_loss / len(validate_loader)
 
-
             # save the model with the best validation loss
             if epoch == 0:
                 best_validation_loss = validation_loss
