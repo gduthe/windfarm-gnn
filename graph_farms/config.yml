@@ -42,5 +42,5 @@ turbine_settings:
   yawH: 6                             # upper limit of yaw error distribution
   max_yaw: 30                         # upper limit of yaw angles
   min_yaw: -30                        # lower limit of yaw angles
-  probability_operating_on: 0.0       # probability of a turbine operating
-  probability_operating_off: 1.0      # probability of a turbine not operating
+  probability_operating_on: 0.9       # probability of a turbine operating
+  probability_operating_off: 0.1      # probability of a turbine not operating

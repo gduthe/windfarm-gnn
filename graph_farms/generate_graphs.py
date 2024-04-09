@@ -77,13 +77,13 @@ def process_one_layout(layout, inflow_df, layout_id, dset_path, node_scada_featu
                     for i in range(0, len(torch.Tensor(power.ws.values))):
 
                         if node_scada_features:
-                            g.x = torch.Tensor(np.array([power.Power.values[:, i], power.WS_eff.values[:, i],
-                                                         power.TI_eff.values[:, i], wt_yaws[:, i], wt_modes[:, i]])).T
+                            g.x = torch.Tensor(np.hstack([power.Power.values[:, i], power.WS_eff.values[:, i],
+                                                         power.TI_eff.values[:, i], wt_yaws[:, i], wt_modes[:, i]]))
                             t = torch.Tensor()
                             for s in loads.sensor.values:
                                 t = torch.cat((t, torch.Tensor(np.array([loads.sel(sensor=s).DEL.values[:, i]]))))
                         else:
-                            g.x = torch.Tensor(np.array([wt_yaws[:, i], wt_modes[:, i]])).T
+                            g.x = torch.Tensor(np.hstack([wt_yaws[:, i], wt_modes[:, i]]))
                             t = torch.Tensor(np.array([power.Power.values[:, i], power.WS_eff.values[:, i],
                                                        power.TI_eff.values[:, i]]))
                             for s in loads.sensor.values:

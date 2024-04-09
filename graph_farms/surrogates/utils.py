@@ -87,8 +87,6 @@ class ThreeRegionLoadSurrogate(FunctionSurrogates):
 
         operating_modes = kwargs.get('operating', np.ones_like(ws_flat))
         operating_modes = fix_shape(operating_modes, ws).ravel().T
-        print(x)
-        print(operating_modes)
 
         def predict(fs):
 
@@ -98,7 +96,7 @@ class ThreeRegionLoadSurrogate(FunctionSurrogates):
                 if m.sum():
                     output[m] = fs_(x[m])
             return output
-        print([predict(fs).reshape(ws.shape) for fs in np.asarray(self.function_surrogate_lst)[run_only]])
+
         return [predict(fs).reshape(ws.shape) for fs in np.asarray(self.function_surrogate_lst)[run_only]]
     
     @property

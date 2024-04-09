@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 import yaml
 from box import Box
+from scipy.spatial.distance import cdist, pdist
 
 
 class LayoutGenerator:
@@ -59,7 +60,7 @@ class LayoutGenerator:
         # generate the layouts
         layouts = []
         for i in range(num_layouts):
-            layout = self.generate_random_layout(n_points[i], farm_lw_ratios[i], min_dists[i])
+            layout = self.generate_random_layoutv2(n_points[i], farm_lw_ratios[i], min_dists[i])
             coords = layout['base_coords']
             
             # pick at random the type of layout
@@ -86,8 +87,8 @@ class LayoutGenerator:
             for the different shapes.
         """
         # creating the initial rectangular domain based on farm aspect ratio
-        width = np.ceil(n_points * min_dist)
-        length = farm_lw_ratio * width
+        length = np.ceil(n_points * min_dist)
+        width = farm_lw_ratio * length
         num_y = np.int32(np.sqrt(n_points / farm_lw_ratio)) + 1
         num_x = np.int32(n_points / num_y) + 1
 
@@ -184,6 +185,126 @@ class LayoutGenerator:
                        'triangle': triangle_boundary, 'triangle_mask': triangle_mask, 'circles_mask': circles_mask,
                        'circles_centers': circles_centers, 'circles_radius': radius, 'width': width, 'length': length, 
                        'alpha': alpha}
+
+        return output_dict
+    
+    def generate_random_layoutv2(self, n_points, farm_lw_ratio, min_dist):
+        """ Generate one random wind farm layout given the number of points, the length, the width of the 
+            farm and the minimum distance between turbines. Returns a dictionary with the layout and the masks
+            for the different shapes.
+        """
+        # creating the initial rectangular domain based on farm aspect ratio
+        num_y = np.int32(np.sqrt(n_points / farm_lw_ratio))
+        num_x = np.int32(n_points / num_y)
+        width = np.ceil((num_y - 1) * 2.5 * min_dist)
+        length = np.ceil((num_x - 1) * 2.5 * min_dist)
+
+        # create regularly spaced points for the boundary of the overall rectangular domain
+        x = np.linspace(0., length, num_x, dtype=np.float32)
+        y = np.linspace(0., width, num_y, dtype=np.float32)
+
+        base_coords = np.stack(np.meshgrid(x, y), -1).reshape(-1, 2)
+        
+        # delete random points from the base coordinates if length exceeds n_points
+        if len(base_coords) > n_points:
+            # pick random indices to delete
+            indices = np.random.choice(len(base_coords), len(base_coords) - n_points, replace=False)
+            base_coords = np.delete(base_coords, indices, axis=0)
+
+        # Perturb all points with a random noise
+        r = min_dist * np.sqrt(np.random.uniform(0, 1, (len(base_coords), 1)))
+        theta = np.random.uniform(0, 2 * np.pi, (len(base_coords), 1))
+        perturbations = np.concatenate((r * np.cos(theta), r * np.sin(theta)), axis=1)
+        base_coords += perturbations
+
+        # compute the resulting spacing between points
+        min_proximity = np.min(pdist(base_coords))
+
+        # compute scaling factor
+        factor = min_dist / min_proximity
+
+        # scale the coordinates
+        base_coords *= factor
+        width *= factor
+        length *= factor
+
+        # all_closest_distances = np.zeros(len(base_coords))
+
+        # # For each point, find the distance to the nearest other point
+        # for i in range(len(base_coords)):
+        #     # Get the distances from the current point to all other points
+        #     distances = cdist(base_coords[i].reshape(1, -1), base_coords)
+        #     # Remove the distance to the current point
+        #     distances = np.delete(distances, i)
+        #     # Find the minimum distance
+        #     min_distance = np.min(distances)
+        #     all_closest_distances[i] = min_distance
+
+        # print('min, avg and max closest distances', min(all_closest_distances), np.mean(all_closest_distances), max(all_closest_distances))
+
+        # min_min = np.min(all_closest_distances)
+        # max_min = np.max(all_closest_distances)
+        
+        # randomly rotate the rectangle around (0,0)
+        alpha = random.uniform(0, np.pi/2)
+        base_coords = rotate((0, 0), base_coords, alpha)
+
+        # creating the elliptical mask
+        theta = np.arange(0, 2 * np.pi, 0.01)
+        v = random.choice([2, 4, 6])
+        a = length / v
+        b = width / 2
+        x0, y0 = rotate((0, 0), (length / 2, width / 2), alpha)
+        extra = random.choice([np.pi / 8, np.pi / 16, 0, - np.pi / 16, -np.pi / 8]) # extra random rotation
+        s1 = ((a**2) * (np.sin(alpha - extra)**2) + (b**2) * (np.cos(alpha - extra)**2)) * (base_coords[:, 0] - x0)**2
+        s2 = 2 * (b**2 - a ** 2) * np.sin(alpha - extra) * np.cos(alpha - extra) * (base_coords[:, 0] - x0) * ( base_coords[:, 1] - y0)
+        s3 = ((a**2) * (np.cos(alpha - extra)**2) + (b**2) * (np.sin(alpha - extra)**2)) * (base_coords[:, 1] - y0)**2
+        elliptical_mask = s1 + s2 + s3 < (a**2) * (b**2)
+        
+        # create the ellipse boundary
+        xpos = (a) * np.cos(theta)
+        ypos = (b) * np.sin(theta)
+        new_xpos = x0 + (xpos) * np.cos(-alpha + extra) + (ypos) * np.sin(-alpha + extra)
+        new_ypos = y0 + (-xpos) * np.sin(-alpha + extra) + (ypos) * np.cos(-alpha + extra)
+        ellipse_boundary = np.array([new_xpos, new_ypos])
+
+        # creating the triangular mask
+        x11 = length / 2
+        y11 = width
+        x21 = 0
+        y21 = 0
+        x31 = length
+        y31 = 0
+        x = base_coords[:, 0]
+        y = base_coords[:, 1]
+        extra = random.choice([np.pi / 8, np.pi / 16, 0, - np.pi / 16, -np.pi / 8]) # extra random rotation
+        x1, y1 = rotate((0, 0), (x11, y11), alpha + extra)
+        x2, y2 = rotate((0, 0), (x21, y21), alpha + extra)
+        x3, y3 = rotate((0, 0), (x31, y31), alpha + extra)
+        triangle_mask = [is_inside_triangle(x1, y1, x2, y2, x3, y3, xp, yp) for xp, yp in zip(x, y)]
+        triangle_boundary = np.array([[x1, y1], [x2, y2], [x3, y3]])
+
+        # creating the small circles masks
+        x = base_coords[:, 0]
+        y = base_coords[:, 1]
+
+        random_turb = random.choice(base_coords) # random turbine choice
+        random_turb2 = random.choice(base_coords) # random turbine choice
+        random_turb3 = random.choice(base_coords) # random turbine choice
+        radius = length / 4
+
+        circle_mask1 = (x - random_turb[0]) ** 2 + (y - random_turb[1]) ** 2 < radius ** 2
+        circle_mask2 = (x - random_turb2[0]) ** 2 + (y - random_turb2[1]) ** 2 < radius ** 2
+        circle_mask3 = (x - random_turb3[0]) ** 2 + (y - random_turb3[1]) ** 2 < radius ** 2
+        
+        circles_mask = circle_mask1 + circle_mask2 + circle_mask3
+        circles_centers = [random_turb, random_turb2, random_turb3]
+        
+        # return the layout as a dictionary
+        output_dict = {'base_coords': base_coords, 'ellipse': ellipse_boundary, 'elliptical_mask': elliptical_mask,
+                        'triangle': triangle_boundary, 'triangle_mask': triangle_mask, 'circles_mask': circles_mask,
+                        'circles_centers': circles_centers, 'circles_radius': radius, 'width': width, 'length': length, 
+                        'alpha': alpha}
 
         return output_dict
     
