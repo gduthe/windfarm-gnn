@@ -40,7 +40,7 @@ turbine_settings:
   max_farm_lw_ratio: 4                # Maximal ratio of farm length to farm width
   yawL: -6                            # lower limit of yaw error distribution
   yawH: 6                             # upper limit of yaw error distribution
-  max_yaw: 35                         # upper limit of yaw angles
-  min_yaw: -35                        # lower limit of yaw angles
-  probability_operating_on: 1.0       # probability of a turbine operating
-  probability_operating_off: 0.0      # probability of a turbine not operating
+  max_yaw: 30                         # upper limit of yaw angles
+  min_yaw: -30                        # lower limit of yaw angles
+  probability_operating_on: 0.0       # probability of a turbine operating
+  probability_operating_off: 1.0      # probability of a turbine not operating

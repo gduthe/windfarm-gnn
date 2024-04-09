@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import xarray as xr
 from py_wake.deficit_models import NiayifarGaussianDeficit, BastankhahGaussianDeficit
-from py_wake.examples.data.iea34_130rwt._iea34_130rwt import IEA34_130_2WT_Surrogate, IEA34_130_1WT_Surrogate
+# from py_wake.examples.data.iea34_130rwt._iea34_130rwt import IEA34_130_2WT_Surrogate, IEA34_130_1WT_Surrogate
 from py_wake.superposition_models import LinearSum, SquaredSum
 from py_wake.wind_farm_models import PropagateDownwind
 from py_wake.turbulence_models import CrespoHernandez
@@ -10,13 +10,16 @@ from py_wake.deflection_models import JimenezWakeDeflection
 from py_wake.rotor_avg_models import RotorCenter, GaussianOverlapAvgModel
 from py_wake.wind_turbines.power_ct_functions import PowerCtFunctionList, PowerCtTabular, default_additional_models
 from py_wake.site._site import UniformSite
-import tensorflow as tf
-import os
-from pathlib import Path
+from surrogates.utils import Custom_IEA34_Surrogate
+from py_wake.flow_map import HorizontalGrid
+import matplotlib.pyplot as plt
+# import tensorflow as tf
+# import os
+# from pathlib import Path
 
 # ignore tensorflow warnings
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+# tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, yaw_angles: np.ndarray, operating_modes: np.ndarray, loads_method:str):
     """ Function to simulate the power and loads of a wind farm given the inflow conditions and the
@@ -50,12 +53,18 @@ def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, yaw_angles: np
     # operating_modes = np.repeat(operating_modes[np.newaxis, :], len(ws), axis=0) # operating modes constant for all ws
     operating_modes = np.vstack([np.random.permutation(operating_modes) for _ in range(len(ws))]).reshape((len(yaw_angles), len(ws), 1)) # operating modes shuffled for all ws
 
-    wt = IEA34_130_1WT_Surrogate() if loads_method == 'OneWT' else IEA34_130_2WT_Surrogate()
+    # wt = Custom_IEA34_Surrogate() if loads_method == 'OneWT' else IEA34_130_2WT_Surrogate()
+    wt = Custom_IEA34_Surrogate()
 
-    # Small patch to manually add power dependency on yaw alignment to the surrogate model
-    wt.powerCtFunction.model_lst = default_additional_models # Default yaw misalignment model and air density model
-    for model in wt.powerCtFunction.model_lst:
-        wt.powerCtFunction.add_inputs(model.required_inputs, model.optional_inputs) # Add required and optional inputs to the powerCtFunction
+    if loads_method == 'TwoWT':
+        raise NotImplementedError('TwoWT is not supported in this version of the code')
+
+    if loads_method == 'TwoWT':
+        # Small patch to manually add power dependency on yaw alignment to the surrogate model
+        # (Only needed for the TwoWT class; the custom OneWT class has this inherently implemented in the surrogates)
+        wt.powerCtFunction.model_lst = default_additional_models # Default yaw misalignment model and air density model
+        for model in wt.powerCtFunction.model_lst:
+            wt.powerCtFunction.add_inputs(model.required_inputs, model.optional_inputs) # Add required and optional inputs to the powerCtFunction
 
     # Adding operating modes to the powerCtFunction, allowing the turbine to be 'off' or 'on'
     wt.powerCtFunction = PowerCtFunctionList(
@@ -74,13 +83,13 @@ def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, yaw_angles: np
                                  superpositionModel=SquaredSum(),
                                  turbulenceModel=CrespoHernandez())
     
-    if loads_method == 'OneWT':
-        # Another small patch to prevent the OneWT load method from throwing a tantrum when 'operating', 'tilt' and 'yaw' are passed
-        def loads(self, ws, **kwargs):
-            for key in ['operating', 'tilt', 'yaw']:
-                kwargs.pop(key, None)
-            return self.loadFunction(ws, **kwargs)
-        wf_model.windTurbines.loads = lambda ws, **kwargs: loads(wf_model.windTurbines, ws, **kwargs)
+    # if loads_method == 'OneWT':
+    #     # Another small patch to prevent the OneWT load method from throwing a tantrum when 'operating', 'tilt' and 'yaw' are passed
+    #     def loads(self, ws, **kwargs):
+    #         for key in ['operating', 'tilt', 'yaw']:
+    #             kwargs.pop(key, None)
+    #         return self.loadFunction(ws, **kwargs)
+    #     wf_model.windTurbines.loads = lambda ws, **kwargs: loads(wf_model.windTurbines, ws, **kwargs)
 
     farm_sim = wf_model(x, y,  # wind turbine positions
                         wd=wd,  # Wind direction time series
@@ -91,6 +100,10 @@ def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, yaw_angles: np
                         tilt = 0,
                         time=True,  # time stamps
                         Alpha=alpha)
+    
+    # Plot flow map
+    farm_sim.flow_map(HorizontalGrid(resolution=200), time=0).plot_wake_map()
+    plt.show()
     
     farm_sim['duration'] = farm_sim.time.values
     sim_loads = farm_sim.loads(method=loads_method)
