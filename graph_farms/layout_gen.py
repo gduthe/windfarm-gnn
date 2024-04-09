@@ -79,8 +79,8 @@ class LayoutGenerator:
             for the different shapes.
         """
         # creating the initial rectangular domain based on farm aspect ratio
-        width = np.ceil(n_points * min_dist)
-        length = farm_lw_ratio * width
+        length = np.ceil(n_points * min_dist)
+        width = length / farm_lw_ratio
         num_y = np.int32(np.sqrt(n_points / farm_lw_ratio)) + 1
         num_x = np.int32(n_points / num_y) + 1
 
@@ -118,7 +118,7 @@ class LayoutGenerator:
         base_coords += noise
         
         # randomly rotate the rectangle around (0,0)
-        alpha = random.uniform(0, np.pi/2)
+        alpha = random.uniform(-np.pi/4, np.pi/4)
         base_coords = rotate((0, 0), base_coords, alpha)
 
         # creating the elliptical mask
