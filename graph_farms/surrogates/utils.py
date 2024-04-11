@@ -144,6 +144,7 @@ class OneRegionPowerSurrogate(PowerCtSurrogate):
                 ct = np.full(ws.shape, 0.06, dtype=y.dtype)
                 ct[oper] = y
                 ct[cutout] = 0
+                ct = ct.clip(0, 1)
                 return ct
         else:
             if run_only == 0:

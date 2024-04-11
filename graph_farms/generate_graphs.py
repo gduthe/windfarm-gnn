@@ -12,6 +12,7 @@ import torch
 from joblib import Parallel, delayed
 import tempfile
 from zipfile import ZipFile
+from tqdm import tqdm
 
 def process_one_layout(layout, inflow_df, layout_id, dset_path, node_scada_features=False, connectivity='delaunay', loads_model='TwoWT'):
     """ Function to process one layout and generate the graphs for the given inflow conditions.
@@ -90,7 +91,7 @@ def process_one_layout(layout, inflow_df, layout_id, dset_path, node_scada_featu
                                 t = torch.cat((t, torch.Tensor(np.array([loads.sel(sensor=s).DEL.values[:, i]]))))
 
                         g.y = t.T
-                        g.globals = torch.Tensor(np.array([power.ws.values[i], power.wd.values[i], power.TI.values[i]]))
+                        g.globals = torch.Tensor(np.array([power.ws.values[i], power.wd.values[i], power.TI.values[i], power.Alpha.values[i]]))
 
                         # if there are no nan values then save graph
                         if not torch.isnan(g.y).any() and not torch.isnan(g.globals).any():
@@ -156,7 +157,7 @@ def generate_graphs(config_path:str, num_layouts:int, num_inflows:int, dset_path
     # loop through the layouts, processing them in parallel
     Parallel(n_jobs=num_threads)(delayed(process_one_layout)
         (layout, inflow_df.iloc[list(range(i*num_inflows, i*num_inflows + num_inflows))], str(i).zfill(len(str(num_layouts))),
-         dset_path, node_scada_features, connectivity, loads_model) for i, layout in enumerate(layouts))
+         dset_path, node_scada_features, connectivity, loads_model) for i, layout in enumerate(tqdm(layouts)))
     
     print('Finished generating {} graphs ({} layouts x {} inflows)!'.format(num_layouts*num_inflows, num_layouts, num_inflows))
 
@@ -165,12 +166,12 @@ if __name__ == "__main__":
     # set the args of the script
     parser = argparse.ArgumentParser()
     parser.add_argument('-config', '-c', help="path to the config file", type=str, required=False, default='config.yml')
-    parser.add_argument('-num_layouts', '-nl', help="number of layouts to generate", type=int, required=False, default=2)
-    parser.add_argument('-num_inflows', '-ni', help="number of inflows to generate per layout", type=int, required=False, default=2)
-    parser.add_argument('-dset_path', '-d', help="path for the dataset to generate", type=str, required=False, default='./generated_graphs/train_set/')
+    parser.add_argument('-num_layouts', '-nl', help="number of layouts to generate", type=int, required=False, default=1500)
+    parser.add_argument('-num_inflows', '-ni', help="number of inflows to generate per layout", type=int, required=False, default=10)
+    parser.add_argument('-dset_path', '-d', help="path for the dataset to generate", type=str, required=False, default='./generated_graphs/testing_set/')
     parser.add_argument('-node_scada_features', '-f', help="if input node features should be used", action='store_true')
-    parser.add_argument('-threads', '-t', help="the number of threads to use", type=int, default=1)
-    parser.add_argument('-connectivity', '-co', help="the kind of connectivity to use: either delaunay, knn, radial, fully_connected, all", type=str, default='delaunay')
+    parser.add_argument('-threads', '-t', help="the number of threads to use", type=int, default=8)
+    parser.add_argument('-connectivity', '-co', help="the kind of connectivity to use: either delaunay, knn, radial, fully_connected, all", type=str, default='fully_connected')
     parser.add_argument('-loads_model', '-l', help="the kind of load model to use: either OneWT, TwoWT or both", type=str, default='OneWT')
 
     args = parser.parse_args()

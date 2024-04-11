@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 import xarray as xr
 from py_wake.deficit_models import NiayifarGaussianDeficit, BastankhahGaussianDeficit
-# from py_wake.examples.data.iea34_130rwt._iea34_130rwt import IEA34_130_2WT_Surrogate, IEA34_130_1WT_Surrogate
 from py_wake.superposition_models import LinearSum, SquaredSum
 from py_wake.wind_farm_models import PropagateDownwind
 from py_wake.turbulence_models import CrespoHernandez
@@ -13,13 +12,6 @@ from py_wake.site._site import UniformSite
 from surrogates.utils import Custom_IEA34_Surrogate
 from py_wake.flow_map import HorizontalGrid
 import matplotlib.pyplot as plt
-# import tensorflow as tf
-# import os
-# from pathlib import Path
-
-# ignore tensorflow warnings
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-# tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, yaw_angles: np.ndarray, operating_modes: np.ndarray, loads_method:str):
     """ Function to simulate the power and loads of a wind farm given the inflow conditions and the
@@ -58,8 +50,6 @@ def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, yaw_angles: np
 
     if loads_method == 'TwoWT':
         raise NotImplementedError('TwoWT is not supported in this version of the code')
-
-    if loads_method == 'TwoWT':
         # Small patch to manually add power dependency on yaw alignment to the surrogate model
         # (Only needed for the TwoWT class; the custom OneWT class has this inherently implemented in the surrogates)
         wt.powerCtFunction.model_lst = default_additional_models # Default yaw misalignment model and air density model
@@ -102,13 +92,14 @@ def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, yaw_angles: np
                         Alpha=alpha)
     
     # Plot flow map
-    farm_sim.flow_map(HorizontalGrid(resolution=200), time=0).plot_wake_map()
-    plt.show()
+    # farm_sim.flow_map(HorizontalGrid(resolution=200), time=0).plot_wake_map()
+    # plt.show()
     
     farm_sim['duration'] = farm_sim.time.values
     sim_loads = farm_sim.loads(method=loads_method)
 
-    # PyWake's OneWT calculation does not return the series of TI values, so we need to add it manually
+    # PyWake's OneWT calculation does not return the series of TI and Alpha values, so we need to add it manually
     farm_sim['TI'] = ti/100
+    farm_sim['Alpha'] = alpha
 
     return farm_sim, sim_loads, yaw, operating_modes

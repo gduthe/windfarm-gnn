@@ -29,18 +29,18 @@ turbine_settings:
   min_rot_rpm: 3.8                    # minimum rotor RPM when the turbine produces power
   max_rot_rpm: 12.9                   # maximum rotor RPM when the turbine produces power
   rated_u: 9.8                        # Rated wind speed
-  cutin_u: 4                          # min wind speed at which turbine starts producing power
-  cutout_u: 25                        # max wind speed at which turbine is still producing power before shutting down due to high wind speeds
+  cutin_u: 0                          # min wind speed at which turbine starts producing power
+  cutout_u: 30                        # max wind speed at which turbine is still producing power before shutting down due to high wind speeds
   height_above_ground: 110            # Hub height
-  min_rotor_dist: 3                   # Factor to multiply with rotor diameter to produce the minimal distance between 2 turbines
+  min_rotor_dist: 2                   # Factor to multiply with rotor diameter to produce the minimal distance between 2 turbines
   max_rotor_dist: 8                   # Factor to multiply with rotor diameter to produce the maximal distance between 2 turbines
   min_turbines: 25                    # Minimal number of turbines in farm
   max_turbines: 100                   # Maximal number of turbines in farm
   min_farm_lw_ratio: 0.5              # Minimal ratio of farm length to farm width
   max_farm_lw_ratio: 4                # Maximal ratio of farm length to farm width
-  yawL: -6                            # lower limit of yaw error distribution
-  yawH: 6                             # upper limit of yaw error distribution
+  yawL: -6                            # lower limit of yaw error distribution <UNUSED>
+  yawH: 6                             # upper limit of yaw error distribution <UNUSED>
   max_yaw: 30                         # upper limit of yaw angles
   min_yaw: -30                        # lower limit of yaw angles
-  probability_operating_on: 0.9       # probability of a turbine operating
-  probability_operating_off: 0.1      # probability of a turbine not operating
+  probability_operating_on: 0.95      # probability of a turbine operating
+  probability_operating_off: 0.05     # probability of a turbine not operating
