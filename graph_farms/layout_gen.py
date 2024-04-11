@@ -126,7 +126,7 @@ class LayoutGenerator:
         base_coords += noise
         
         # randomly rotate the rectangle around (0,0)
-        alpha = random.uniform(0, np.pi/2)
+        alpha = random.uniform(-np.pi/4, np.pi/4)
         base_coords = rotate((0, 0), base_coords, alpha)
 
         # creating the elliptical mask
@@ -246,7 +246,7 @@ class LayoutGenerator:
         # max_min = np.max(all_closest_distances)
         
         # randomly rotate the rectangle around (0,0)
-        alpha = random.uniform(0, np.pi/2)
+        alpha = random.uniform(-np.pi/4, np.pi/4)
         base_coords = rotate((0, 0), base_coords, alpha)
 
         # creating the elliptical mask

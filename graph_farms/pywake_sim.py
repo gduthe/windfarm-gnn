@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import xarray as xr
 from py_wake.deficit_models import NiayifarGaussianDeficit, BastankhahGaussianDeficit
 from py_wake.superposition_models import LinearSum, SquaredSum
 from py_wake.wind_farm_models import PropagateDownwind
@@ -26,7 +25,6 @@ def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, yaw_angles: np
         loads_method: str, the kind of load model to use: either OneWT or TwoWT
     """
     assert (loads_method in ['OneWT', 'TwoWT'])
-    xr.set_options(display_expand_data=False)
     site = UniformSite()
 
     ws = inflow_df.u
