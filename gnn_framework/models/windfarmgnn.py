@@ -51,7 +51,7 @@ class WindFarmGNN(nn.Module):
 
     def compute_loss(self, data):
         # computes the loss for a given batch of data
-        node_loss = nn.functional.mse_loss(data.x, data.y)
+        node_loss = nn.functional.mse_loss(data.x, data.y) / data.num_nodes
         return node_loss
     
     def normalize_input(self, data):
