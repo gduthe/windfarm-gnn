@@ -1,5 +1,5 @@
 import numpy as np
-from .utils import rotate, is_inside_triangle
+from utils import rotate, is_inside_triangle
 import random
 from scipy.stats import qmc
 from matplotlib.patches import Rectangle
@@ -189,7 +189,6 @@ class LayoutGenerator:
         
         matplotlib.rc('text', usetex=True)
         matplotlib.rcParams['font.family'] = 'DejaVu Sans'
-        matplotlib.rcParams['axes.unicode_minus'] = False
 
         coords = layout['base_coords']
         length = layout['length']
@@ -234,12 +233,11 @@ if __name__ == "__main__":
     # example usage to plot one layout with all the different shapes
     config = Box.from_yaml(filename='/home/gregory/Documents/PhD/windfarm-gnn/graph_farms/config.yml', Loader=yaml.FullLoader)
     layout_generator = LayoutGenerator(**config.turbine_settings)
-    layout1 = layout_generator.generate_random_layout(n_points=100, farm_lw_ratio=2, min_dist=5)
-    layout2 = layout_generator.generate_random_layout(n_points=30, farm_lw_ratio=0.5, min_dist=3)
+    layout1 = layout_generator.generate_random_layout(n_points=100, farm_lw_ratio=2, min_dist=3*130)
+    layout2 = layout_generator.generate_random_layout(n_points=30, farm_lw_ratio=0.5, min_dist=5*130)
     layout_generator.plot(layout1)
     layout_generator.plot(layout2)
     plt.show()
     
     # to generate multiple random layouts ready for processing in PyWake
     layouts = layout_generator.generate_layouts(num_layouts=5)
-    print(layouts)

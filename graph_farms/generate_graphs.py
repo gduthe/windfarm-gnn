@@ -1,7 +1,7 @@
-from .layout_gen import LayoutGenerator
-from .inflow_gen import InflowGenerator
-from .pywake_sim import simulate_farm
-from .utils import to_graph
+from layout_gen import LayoutGenerator
+from inflow_gen import InflowGenerator
+from pywake_sim import simulate_farm
+from utils import to_graph
 import yaml
 import numpy as np
 import argparse
@@ -23,11 +23,11 @@ def process_one_layout(layout, inflow_df, layout_id, dset_path, node_scada_featu
         layout_id: str, the id of the layout
         dset_path: str, the path to save the dataset
         node_scada_features: bool, if the graphs should have node features which 'replicate' SCADA (power, ws, ti)
-        connectivity: str, the kind of connectivity to use: either delaunay, knn, radial, fully_connected, all ()
+        connectivity: str, the kind of connectivity to use: either delaunay, knn, radial, fully_connected, raycasting, all
         loads_model: str, the kind of load model to use: either OneWT, TwoWT or both (for comparison)
     """
     assert (loads_model in ['OneWT', 'TwoWT', 'both'])
-    assert (connectivity in ['delaunay', 'knn', 'radial', 'fully_connected', 'all'])
+    assert (connectivity in ['delaunay', 'knn', 'radial', 'fully_connected', 'raycasting', 'all'])
 
     # extract coords of the wind turbines from layout
     wt_coords = layout['coords']
@@ -43,7 +43,7 @@ def process_one_layout(layout, inflow_df, layout_id, dset_path, node_scada_featu
         
     # choose connectivity
     if connectivity == 'all':
-        connectivity_list = ['delaunay', 'knn', 'radial', 'fully_connected']
+        connectivity_list = ['delaunay', 'knn', 'radial', 'fully_connected', 'raycasting']
     else:
         connectivity_list = [connectivity]
 
@@ -59,7 +59,8 @@ def process_one_layout(layout, inflow_df, layout_id, dset_path, node_scada_featu
             for c in connectivity_list:
 
                 # parse the raw points to a graph based on current connectivity
-                g = to_graph(wt_coords, connectivity=c, min_dist=layout['min_dist'], add_edge='polar')
+                if c != 'raycasting':
+                    g = to_graph(wt_coords, connectivity=c, min_dist=layout['min_dist'], add_edge='polar')
 
                 # get the dataset path for this connectivity
                 dataset_path = os.path.join(dset_path, loads_method, c)
@@ -69,6 +70,8 @@ def process_one_layout(layout, inflow_df, layout_id, dset_path, node_scada_featu
                 zip_path = os.path.join(dataset_path, '_'.join(info)) + '.zip'
                 with ZipFile(zip_path, 'w') as zf:
                     for i in range(0, len(torch.Tensor(power.ws.values))):
+                        if c == 'raycasting':
+                            g = to_graph(wt_coords, connectivity=c, wd=power.wd.values[i], add_edge='polar', turbine_diameter=130, ray_cast_angle=90)
 
                         if node_scada_features:
                             g.x = torch.Tensor(np.array([power.Power.values[:, i], power.WS_eff.values[:, i],
@@ -163,7 +166,7 @@ if __name__ == "__main__":
     parser.add_argument('-dset_path', '-d', help="path for the dataset to generate", type=str, required=False, default='./generated_graphs/train_set/')
     parser.add_argument('-node_scada_features', '-f', help="if input node features should be used", action='store_true')
     parser.add_argument('-threads', '-t', help="the number of threads to use", type=int, default=4)
-    parser.add_argument('-connectivity', '-co', help="the kind of connectivity to use: either delaunay, knn, radial, fully_connected, all", type=str, default='delaunay')
+    parser.add_argument('-connectivity', '-co', help="the kind of connectivity to use: either delaunay, knn, radial, fully_connected, raycasting, all", type=str, default='delaunay')
     parser.add_argument('-loads_model', '-l', help="the kind of load model to use: either OneWT, TwoWT or both", type=str, default='TwoWT')
 
     args = parser.parse_args()
