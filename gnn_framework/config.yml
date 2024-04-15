@@ -6,8 +6,8 @@ run_settings:
 
 # settings that handle the io
 io_settings:
-  train_dataset_path:  '/home/gregory/Documents/PhD/wind-farm-learning-gnn/GNN_framework/datasets/1k_layouts_10_inflows/delaunay'
-  valid_dataset_path:  '../graph_farms/generated_graphs/valid_set/TwoWT/delaunay'
+  train_dataset_path:  '../graph_farms/generated_graphs/training_set/OneWT/fully_connected'
+  valid_dataset_path:  '../graph_farms/generated_graphs/validation_set/OneWT/fully_connected'
   run_dir: './runs'                     # path to the save directory for model saving
   save_epochs: 10                       # number of epochs between model saves
   pretrained_model: ''                  # leave empty string if not using pretrained model
@@ -31,6 +31,7 @@ model_settings:
     node_enc_mlp_layers: [256, 256]     # list of hidden layer dimensions for the node encoder MLP
     edge_enc_mlp_layers: [256, 256]     # list of hidden layer dimensions for the edge encoder MLP
     glob_enc_mlp_layers: [256, 256]     # list of hidden layer dimensions for the globals encoder MLP
+    encode_globals: True                # if the globals should be encoded
     dropout: 0.0                        # dropout value to set in the encoder
 
   processor_settings:

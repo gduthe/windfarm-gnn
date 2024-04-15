@@ -26,6 +26,7 @@ def train(config_path: str):
                               persistent_workers=False if config.run_settings.num_t_workers == 0 else True)
     
     # add the main training dataset parameters to the config (will be saved with the model for reference)
+    config.hyperparameters.node_feature_dim = train_dataset.num_node_features
     config.hyperparameters.edge_feature_dim = train_dataset.num_edge_features
     config.hyperparameters.glob_feature_dim = train_dataset.num_glob_features
     config.hyperparameters.node_out_dim = train_dataset.num_node_output_features
@@ -48,6 +49,17 @@ def train(config_path: str):
     current_run_dir = os.path.join(config.io_settings.run_dir, run_name)
     os.makedirs(os.path.join(current_run_dir, 'trained_models'), exist_ok=True)
     config.to_yaml(filename=os.path.join(current_run_dir, 'config.yml'))
+
+    if os.path.exists('./comet_settings.yml'):
+        with open('./comet_settings.yml', 'r') as f:
+            comet_settings = yaml.load(f, Loader=yaml.FullLoader)
+            if comet_settings['log_experiment']:
+                from comet_ml import Experiment
+                log_comet = True
+                experiment = Experiment(api_key=comet_settings['api_key'], project_name=comet_settings['comet_project'], workspace=comet_settings['workspace'], auto_metric_logging=False)
+                experiment.set_name(run_name)
+                experiment.log_parameters(config.hyperparameters.to_dict())
+                experiment.log_parameters(config.model_settings.to_dict())
 
     # initialize the model given the dataset properties and the config
     model = WindFarmGNN(**config.hyperparameters, **config.model_settings)
@@ -109,6 +121,10 @@ def train(config_path: str):
         if epoch < config.hyperparameters.lr_decay_stop:
             scheduler.step()
 
+        if log_comet:
+            with experiment.train():
+                experiment.log_metric('loss', train_loss, step=epoch + 1)
+
         # save the trained model every n epochs
         if (epoch + 1) % config.io_settings.save_epochs == 0:
             torch.save({'model_state_dict': model.state_dict(),'trainset_stats': model.trainset_stats}
@@ -130,6 +146,9 @@ def train(config_path: str):
             # get the full dataset validation loss for this epoch
             validation_loss = validation_loss / len(validate_loader)
 
+            if log_comet:
+                with experiment.validate():
+                    experiment.log_metric('loss', validation_loss, step=epoch + 1)
 
             # save the model with the best validation loss
             if epoch == 0:
@@ -137,7 +156,7 @@ def train(config_path: str):
             else:
                 if validation_loss < best_validation_loss:
                     best_validation_loss = validation_loss
-                    torch.save({'model_state_dict': model.state_dict(),'trainset_stats': model.trainset_stats},
+                    torch.save({'model_state_dict': model.state_dict(),'trainset_stats': model.trainset_stats, 'config': config},
                                os.path.join(current_run_dir, 'trained_models', 'best.pt'))
 
             pbar.set_postfix({'Train Loss': f'{train_loss:.8f}', 'Validation Loss': f'{validation_loss:.8f}'})

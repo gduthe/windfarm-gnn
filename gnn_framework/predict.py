@@ -2,7 +2,7 @@ import argparse
 from box import Box
 from models import WindFarmGNN
 from finetuning.minlora import add_lora
-from dataset import GraphFarmsDataset
+from data import GraphFarmsDataset
 import os
 import yaml
 from torch_geometric.loader import DataLoader

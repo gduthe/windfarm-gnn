@@ -25,7 +25,7 @@ class Encoder(nn.Module):
         super().__init__()
         # make sure the required arguments are provided
         assert {'node_feature_dim', 'node_enc_mlp_layers', 'node_latent_dim', 'edge_feature_dim', 'edge_enc_mlp_layers',
-                'edge_latent_dim', 'encode_globals', 'glob_enc_mlp_layers', 'glob_latent_dim', 'dropout'}.issubset(kwargs)
+                'edge_latent_dim', 'encode_globals', 'glob_feature_dim', 'glob_enc_mlp_layers', 'glob_latent_dim', 'dropout'}.issubset(kwargs)
         
         # Flag to encode global attributes
         self.encode_globals = kwargs['encode_globals']

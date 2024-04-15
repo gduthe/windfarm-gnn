@@ -166,9 +166,9 @@ if __name__ == "__main__":
     # set the args of the script
     parser = argparse.ArgumentParser()
     parser.add_argument('-config', '-c', help="path to the config file", type=str, required=False, default='config.yml')
-    parser.add_argument('-num_layouts', '-nl', help="number of layouts to generate", type=int, required=False, default=1500)
+    parser.add_argument('-num_layouts', '-nl', help="number of layouts to generate", type=int, required=False, default=5000)
     parser.add_argument('-num_inflows', '-ni', help="number of inflows to generate per layout", type=int, required=False, default=10)
-    parser.add_argument('-dset_path', '-d', help="path for the dataset to generate", type=str, required=False, default='./generated_graphs/testing_set/')
+    parser.add_argument('-dset_path', '-d', help="path for the dataset to generate", type=str, required=False, default='./generated_graphs/training_set/')
     parser.add_argument('-node_scada_features', '-f', help="if input node features should be used", action='store_true')
     parser.add_argument('-threads', '-t', help="the number of threads to use", type=int, default=8)
     parser.add_argument('-connectivity', '-co', help="the kind of connectivity to use: either delaunay, knn, radial, fully_connected, all", type=str, default='fully_connected')

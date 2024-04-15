@@ -305,6 +305,9 @@ class LayoutGenerator:
                         'triangle': triangle_boundary, 'triangle_mask': triangle_mask, 'circles_mask': circles_mask,
                         'circles_centers': circles_centers, 'circles_radius': radius, 'width': width, 'length': length, 
                         'alpha': alpha}
+        
+        if np.sum(elliptical_mask) == 0 or np.sum(triangle_mask) == 0 or np.sum(circles_mask) == 0:
+            output_dict = self.generate_random_layoutv2(n_points, farm_lw_ratio, min_dist)
 
         return output_dict
     

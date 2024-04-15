@@ -94,13 +94,13 @@ def to_graph(points: np.array, connectivity: str, min_dist=None, constant=30, ad
 
     if add_edge == 'polar'.casefold():
         p = Polar(norm=False)
-        p(g)
+        g = p(g)
     elif add_edge == 'cartesian'.casefold():
         c = Cartesian(norm=False)
-        c(g)
+        g = c(g)
     elif add_edge == 'local cartesian'.casefold():
         lc = LocalCartesian(norm=False)
-        lc(g)
+        g = lc(g)
     else:
         raise ValueError(
             'Please select a coordinate system that is supported (available types: : \'polar\', \'cartesian\' or \'local cartesian\')')

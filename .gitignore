@@ -3,5 +3,8 @@ __pycache__/
 graph_farms/generated_graphs/
 
 gnn_framework/runs/
+gnn_framework/comet_settings.yml
+
+test.py
 
 *.zip
