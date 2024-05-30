@@ -1,12 +1,15 @@
 # Wind Farm GNNs
 
-This repository is dedicated to the development of Graph Neural Networks (GNN) for predicting wind farm-wide power, local flow variables and loads. Our models aim to predict average power, rotor averaged wind speed and effective turbulence intensity, along with damage equivalent moments (DEL) in blade flap- and edgewise directions, tower top tortional and bottom fore-aft and side-to-side. The use of GNNs allows for a layout-agnostic multivariate model.
+This repository is dedicated to the development of Graph Neural Networks (GNN) for predicting wind farm-wide power, local flow variables and loads. Our models aim to predict 10min average power, rotor averaged wind speed and effective turbulence intensity, along with damage equivalent loads (DELs) in blade flap- and edgewise directions, tower top tortional and bottom fore-aft and side-to-side. The use of GNNs allows for a layout-agnostic multivariate model. Code associated with the following papers:
+- "Local flow and loads estimation on wake-affected wind turbines using graph neural networks and PyWake", paper [here](https://iopscience.iop.org/article/10.1088/1742-6596/2505/1/012014)
+- "Multivariate prediction on wake-affected wind turbines using graph neural networks", paper [here](https://www.research-collection.ethz.ch/handle/20.500.11850/674010)
 
 ## Features
-- **Robust Data Generation**: We use Sobol sampling to generate robust datasets with realistic inflow conditions and randomized layouts.
-- **Parallelized Data Generation**: We parallelize [PyWake](https://topfarm.pages.windenergy.dtu.dk/PyWake/) to quickly generate some training data.
-- **Multivariate GNN Models**: Leverage the power of graph neural networks to predict wind farm performance and loads. Three default message-passing implementations are provided.
-- **Layout-Agnostic**: Capable of working with any wind farm layout.
+- **Robust & parallelized data generation**: we use Sobol sampling to generate robust datasets with realistic inflow conditions and randomized layouts. We also parallelize [PyWake](https://topfarm.pages.windenergy.dtu.dk/PyWake/) to quickly generate training data.
+- **Multivariate GNN models**: outputs of both power and loads. Three default message-passing implementations are provided.
+- **Layout-agnostic**: capable of working with any wind farm layout.
+- **Fast**: runs ~10x quicker than PyWake, makes it suitable for RL envs.
+- **LoRA-based finetuning**: have some higher fidelity simulations or different turbines?  Use the provided finetuning framework to transfer to higher fidelities or different turbines with a minimal amount of data.
 
 ## Getting Started
 
@@ -89,3 +92,5 @@ We provide a function to gather prediction results for a given test dataset in `
 If you are using the code, please consider citing: 
 
 > Duthé, G., de Nolasco Santos, F., Abdallah, I., Réthore, P.É., Weijtjens, W., Chatzi, E. and Devriendt, C., 2023, May. Local flow and loads estimation on wake-affected wind turbines using graph neural networks and PyWake. In Journal of Physics: Conference Series (Vol. 2505, No. 1, p. 012014). IOP Publishing.
+
+> de Nolasco Santos, F., Duthé, G., Abdallah, I., Réthoré, P. É., Weijtjens, W., Chatzi, E., & Devriendt, C. (2024). Multivariate prediction on wake-affected wind turbines using graph neural networks. In EURODYN 2023. Proceedings of the XII International Conference on Structural Dynamics. IOP Publishing.
