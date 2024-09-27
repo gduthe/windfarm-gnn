@@ -66,6 +66,15 @@ class IEA34_130_Base(WindTurbine):
                              hub_height=110,
                              powerCtFunction=powerCtFunction,
                              loadFunction=loadFunction)
+        
+class IEA10_198_Base(WindTurbine):
+    
+    def __init__(self, powerCtFunction, loadFunction):
+        WindTurbine.__init__(self, 'IEA 10MW',
+                            diameter=198,
+                            hub_height=119,
+                            powerCtFunction=powerCtFunction,
+                            loadFunction=loadFunction)
 
 class ThreeRegionLoadSurrogate(FunctionSurrogates):
 
@@ -154,14 +163,17 @@ class OneRegionPowerSurrogate(PowerCtSurrogate):
                 ct[cutout] = 0
                 return ct
     
-class Custom_IEA34_Surrogate(IEA34_130_Base):
+class Custom_IEA_Surrogate(IEA34_130_Base):
 
     load_sensors = ['DEL_BLFW', 'DEL_BLEW', 'DEL_TTYAW', 'DEL_TBSS', 'DEL_TBFA']
     load_regions = ['low', 'mid', 'nonop']
 
-    def __init__(self):
-        loadFunction = ThreeRegionLoadSurrogate('models', lambda ws, TI_eff=.1, Alpha=0, yaw=0: [ws, TI_eff, Alpha, yaw], self.load_sensors, self.load_regions)
-        powerCtFunction = OneRegionPowerSurrogate('models')
+    def __init__(self, turbine_type='34MW'):
+
+        assert turbine_type in ['34MW', '10MW'], 'Only 34MW and 10MW are supported'
+
+        loadFunction = ThreeRegionLoadSurrogate(f'models/{turbine_type}', lambda ws, TI_eff=.1, Alpha=0, yaw=0: [ws, TI_eff, Alpha, yaw], self.load_sensors, self.load_regions)
+        powerCtFunction = OneRegionPowerSurrogate(f'models/{turbine_type}')
         IEA34_130_Base.__init__(self, powerCtFunction=powerCtFunction, loadFunction=loadFunction)
 
         self.powerCtFunction = PowerCtFunctionList(
@@ -169,3 +181,4 @@ class Custom_IEA34_Surrogate(IEA34_130_Base):
             powerCtFunction_lst=[PowerCtTabular(ws=[0, 100], power=[0, 0], power_unit='w', ct=[0, 0]), # 0=No power and ct
                                  self.powerCtFunction], # 1=Normal operation
             default_value=1)
+        

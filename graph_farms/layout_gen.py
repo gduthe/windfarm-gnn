@@ -322,7 +322,7 @@ class LayoutGenerator:
     def plot(self, layout):
         """ Plotting function to visualize a wind farm layout with all the possible shapes. """
         
-        matplotlib.rc('text', usetex=True)
+        # matplotlib.rc('text', usetex=True)
         matplotlib.rcParams['font.family'] = 'DejaVu Sans'
         matplotlib.rcParams['axes.unicode_minus'] = False
 
@@ -369,12 +369,12 @@ if __name__ == "__main__":
     # example usage to plot one layout with all the different shapes
     config = Box.from_yaml(filename='config.yml', Loader=yaml.FullLoader)
     layout_generator = LayoutGenerator(**config.turbine_settings)
-    layout1 = layout_generator.generate_random_layout(n_points=100, farm_lw_ratio=2, min_dist=5)
-    layout2 = layout_generator.generate_random_layout(n_points=30, farm_lw_ratio=0.5, min_dist=3)
+    layout1 = layout_generator.generate_random_layoutv2(n_points=50, farm_lw_ratio=1.0, min_dist=5)
+    # layout2 = layout_generator.generate_random_layout2(n_points=30, farm_lw_ratio=0.5, min_dist=3)
     layout_generator.plot(layout1)
-    layout_generator.plot(layout2)
+    # layout_generator.plot(layout2)
     plt.show()
     
-    # to generate multiple random layouts ready for processing in PyWake
-    layouts = layout_generator.generate_layouts(num_layouts=5)
-    print(layouts)
+    # # to generate multiple random layouts ready for processing in PyWake
+    # layouts = layout_generator.generate_layouts(num_layouts=5)
+    # print(layouts)

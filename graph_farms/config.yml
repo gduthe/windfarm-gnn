@@ -2,8 +2,8 @@
 inflow_settings: 
   mean_V: 10                          # Mean wind speed
   k_V: 2.0                            # Shape factor of a Weibull distribution of the wind speed
-  Iref: 0.16                          # Iref parameter
-  Vmin: 1                             # Minimum simulated wind speed <Vin
+  Iref: 0.18                          # Iref parameter
+  Vmin: 0                             # Minimum simulated wind speed <Vin
   Vmax: 30                            # Maximum simulated wind speed >Vout
   mean_turb_Lscale: 0.2               # Mean value of turbulence length scale as percent of chord length, at the inlet grid
   COV_turb_Lscale: 0.01               # Coefficient of variation (COV) of turbulence length scale
@@ -19,8 +19,8 @@ inflow_settings:
   COV_air_temp: 0.30                  # Coefficient of variation (COV) of air temperature
   mean_D: 240                         # Mean wind direction (degrees)
   k_D: 2                              # Shape factor of a Weibull distribution of the wind direction
-  min_alpha: -0.0997070313            # Minimum shear exponent (from PyWake)
-  max_alpha: 0.4994140625             # Maximum shear exponent (from PyWake)
+  min_alpha: -0.3                     # Minimum shear exponent (from PyWake)
+  max_alpha: 2.5                      # Maximum shear exponent (from PyWake)
 
 
 # settings for the turbine and the yaw error, default here is IEA 3.4 MW which is the model used in PyWake for loads

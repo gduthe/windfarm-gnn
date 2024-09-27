@@ -35,37 +35,45 @@ class InflowGenerator:
         self.turbine_settings = kwargs['turbine_settings']
         
         # initialize Sobol sampler for consistent sampling across independent parameters
-        self.sampler = qmc.Sobol(d=3, scramble=True)
+        self.sampler = qmc.Sobol(d=5, scramble=True)
 
     def __gen_wind_velocities(self, sobol_samples: np.array):
         # compute scale param and get shape param
-        a = 2 * self.inflow_settings['mean_V'] / np.sqrt(np.pi)
-        k_V = self.inflow_settings['k_V']
+        # a = 2 * self.inflow_settings['mean_V'] / np.sqrt(np.pi)
+        # k_V = self.inflow_settings['k_V']
 
-        # calculate the probabilities corresponding to the bounds
-        bounds = np.array([self.turbine_settings['cutin_u'], self.turbine_settings['cutout_u']])
-        P_bounds = weibull_min.cdf(bounds, k_V, loc=0, scale=a)
+        # # calculate the probabilities corresponding to the bounds
+        # bounds = np.array([self.turbine_settings['cutin_u'], self.turbine_settings['cutout_u']])
+        # P_bounds = weibull_min.cdf(bounds, k_V, loc=0, scale=a)
 
-        # A little trick to avoid cyclicity
-        random.seed(42)
-        random.shuffle(sobol_samples)
+        # # A little trick to avoid cyclicity
+        # random.seed(42)
+        # random.shuffle(sobol_samples)
 
-        # scale and shift samples to cover P_bounds
-        x = P_bounds[0] + sobol_samples * (P_bounds[1] - P_bounds[0])
+        # # scale and shift samples to cover P_bounds
+        # x = P_bounds[0] + sobol_samples * (P_bounds[1] - P_bounds[0])
 
-        # compute inflow velocity
-        u = weibull_min.ppf(x, k_V, scale=a)
+        # # compute inflow velocity
+        # u = weibull_min.ppf(x, k_V, scale=a)
+
+        u = sobol_samples * (self.inflow_settings['Vmax'] - self.inflow_settings['Vmin']) + self.inflow_settings['Vmin']
         
         return u
 
-    def __gen_turbulence(self, u: np.array):
+    def __gen_turbulence(self, u: np.array, sobol_samples: np.array):
         # generate free stream turbulence and turbulence intensity (IEC standards)
-        mu_T = self.inflow_settings['Iref'] * (0.75 * u + 3.8)
-        sig_T = 1.4 * self.inflow_settings['Iref']
-        m = np.log((mu_T ** 2) / np.sqrt(sig_T ** 2 + mu_T ** 2))
-        v = np.sqrt(np.log((sig_T / mu_T) ** 2 + 1))
-        turb = np.random.lognormal(mean=m, sigma=v)
-        ti = 100 * turb / u
+        # mu_T = self.inflow_settings['Iref'] * (0.75 * u + 3.8)
+        # sig_T = 1.4 * self.inflow_settings['Iref']
+        # m = np.log((mu_T ** 2) / np.sqrt(sig_T ** 2 + mu_T ** 2))
+        # v = np.sqrt(np.log((sig_T / mu_T) ** 2 + 1))
+        # turb = np.random.lognormal(mean=m, sigma=v)
+        # ti = 100 * turb / u
+        # ti = np.clip(ti, None, 50)
+        ti_upper_bound = np.clip(self.inflow_settings['Iref'] * (0.75 + 5.6 / u), None, 0.5)
+        ti_lower_bound = 0.04
+        ti = sobol_samples * (ti_upper_bound - ti_lower_bound) + ti_lower_bound
+
+        turb = None
 
         # generate turbulence length scale
         mu_TL = self.inflow_settings['mean_turb_Lscale'] * (0.75 * u + 3.6)
@@ -98,16 +106,19 @@ class InflowGenerator:
         
         return wd
 
-    def __gen_freestream_shear(self, u: np.array):
+    def __gen_freestream_shear(self, u: np.array, sobol_samples: np.array):
         # generate free stream shear exponent based on wind speed
-        mu_alpha = 0.088 * (np.log(u) - 1)
-        sig_alpha = 1.0 / u
-        bounds = np.array([self.inflow_settings['min_alpha'], self.inflow_settings['max_alpha']])
+        # mu_alpha = 0.088 * (np.log(u) - 1)
+        # sig_alpha = 1.0 / u
+        # bounds = np.array([self.inflow_settings['min_alpha'], self.inflow_settings['max_alpha']])
 
-        shearExp = np.fromiter(
-            (truncnorm.rvs((bounds[0] - mu_alpha) / sig_alpha, (bounds[1] - mu_alpha) / sig_alpha, loc=mu_alpha,
-                           scale=sig_alpha)), dtype=np.float64)
-        return shearExp
+        # shearExp = np.fromiter(
+        #     (truncnorm.rvs((bounds[0] - mu_alpha) / sig_alpha, (bounds[1] - mu_alpha) / sig_alpha, loc=mu_alpha,
+        #                    scale=sig_alpha)), dtype=np.float64)
+        alpha_min = np.clip(0.15 - 0.23 * (self.inflow_settings['Vmax'] / u) * (1 - (0.4 * np.log(self.turbine_settings['rotor_diameter'] / self.turbine_settings['height_above_ground'])**2)), self.inflow_settings['min_alpha'], None)
+        alpha_max = np.clip(0.22 + 0.4 * (self.turbine_settings['rotor_diameter'] / self.turbine_settings['height_above_ground']) * (self.inflow_settings['Vmax']  / u), None, self.inflow_settings['max_alpha'])
+        alpha = sobol_samples * (alpha_max - alpha_min) + alpha_min
+        return alpha
 
     def __gen_air_properties(self, sobol_samples: np.array):
         qL = -20  # lower bound
@@ -148,9 +159,9 @@ class InflowGenerator:
         samples = self.sampler.random_base2(m=int(np.ceil(np.log2(num_samples))))[:num_samples]
         u = self.__gen_wind_velocities(samples[:, 0])
         wd = self.__gen_wind_direction(samples[:, 1])
-        turb, ti, tl = self.__gen_turbulence(u)
-        shearexp = self.__gen_freestream_shear(u)
-        airtemp, rho, nu = self.__gen_air_properties(samples[:, 2])
+        turb, ti, tl = self.__gen_turbulence(u, samples[:, 2])
+        shearexp = self.__gen_freestream_shear(u, samples[:, 3])
+        airtemp, rho, nu = self.__gen_air_properties(samples[:, 4])
         hflowang = self.__gen_yaw_misalignment(u, ti)
         
         output_dict = {'u': u, 'turb': turb, 'ti': ti, 'tl': tl, 'shearexp': shearexp, 'airtemp': airtemp,
@@ -164,7 +175,7 @@ class InflowGenerator:
          # plotting settings
         plt.rcParams['font.size'] = 14
         plt.rcParams['axes.linewidth'] = 2
-        plt.rc('text', usetex=True)
+        # plt.rc('text', usetex=True)
         plt.rcParams['font.family'] = 'DejaVu Sans'
         plt.rcParams['axes.unicode_minus'] = False
         
@@ -297,9 +308,9 @@ class InflowGenerator:
 if __name__ == "__main__":
     # example usage
     config_dict = {
-        'inflow_settings': {'mean_V': 8.5, 'k_V': 2.0, 'Iref': 0.16, 'mean_turb_Lscale': 0.1, 'min_alpha': 0.05,
-                            'max_alpha': 0.2, 'mean_air_temp': 15.0, 'COV_air_temp': 0.02, 'COV_Dyn_Viscosity': 0.01},
-        'turbine_settings': {'cutin_u': 3.0, 'cutout_u': 25.0, 'height_above_ground': 90.0, 'yawL': -30.0, 'yawH': 30.0}
+        'inflow_settings': {'mean_V': 8.5, 'k_V': 2.0, 'Iref': 0.18, 'mean_turb_Lscale': 0.1, 'min_alpha': -0.3,
+                            'max_alpha': 2.5, 'mean_air_temp': 15.0, 'COV_air_temp': 0.02, 'COV_Dyn_Viscosity': 0.01, 'Vmax': 30.0, 'Vmin': 0.0},
+        'turbine_settings': {'cutin_u': 3.0, 'cutout_u': 25.0, 'height_above_ground': 110.0, 'yawL': -30.0, 'yawH': 30.0, 'rotor_diameter': 130}
     }
     inflow_gen = InflowGenerator(**config_dict)
     inflow_gen.generate_inflows(num_samples=1000, plot=True)

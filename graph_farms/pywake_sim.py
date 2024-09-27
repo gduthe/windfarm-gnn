@@ -8,11 +8,11 @@ from py_wake.deflection_models import JimenezWakeDeflection
 from py_wake.rotor_avg_models import RotorCenter, GaussianOverlapAvgModel
 from py_wake.wind_turbines.power_ct_functions import PowerCtFunctionList, PowerCtTabular, default_additional_models
 from py_wake.site._site import UniformSite
-from surrogates.utils import Custom_IEA34_Surrogate
+from surrogates.utils import Custom_IEA_Surrogate
 from py_wake.flow_map import HorizontalGrid
 import matplotlib.pyplot as plt
 
-def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, yaw_angles: np.ndarray, operating_modes: np.ndarray, loads_method:str):
+def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, yaw_angles: np.ndarray, operating_modes: np.ndarray, loads_method:str, turbine_type: str = '34MW'):
     """ Function to simulate the power and loads of a wind farm given the inflow conditions and the
         wind turbine positions using PyWake. The function will return the simulated power and loads 
         for each turbine.
@@ -44,7 +44,7 @@ def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, yaw_angles: np
     operating_modes = np.vstack([np.random.permutation(operating_modes) for _ in range(len(ws))]).reshape((len(yaw_angles), len(ws), 1)) # operating modes shuffled for all ws
 
     # wt = Custom_IEA34_Surrogate() if loads_method == 'OneWT' else IEA34_130_2WT_Surrogate()
-    wt = Custom_IEA34_Surrogate()
+    wt = Custom_IEA_Surrogate(turbine_type=turbine_type)
 
     if loads_method == 'TwoWT':
         raise NotImplementedError('TwoWT is not supported in this version of the code')
@@ -82,7 +82,7 @@ def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, yaw_angles: np
     farm_sim = wf_model(x, y,  # wind turbine positions
                         wd=wd,  # Wind direction time series
                         ws=ws,  # Wind speed time series
-                        TI = ti/100,  # Turbulence intensity time series
+                        TI = ti,  # Turbulence intensity time series
                         yaw = yaw,  # Yaw angles time series
                         operating = operating_modes,  # Operating modes time series,
                         tilt = 0,
@@ -97,7 +97,7 @@ def simulate_farm(inflow_df: pd.DataFrame, positions: np.ndarray, yaw_angles: np
     sim_loads = farm_sim.loads(method=loads_method)
 
     # PyWake's OneWT calculation does not return the series of TI and Alpha values, so we need to add it manually
-    farm_sim['TI'] = ti/100
+    farm_sim['TI'] = ti
     farm_sim['Alpha'] = alpha
 
     return farm_sim, sim_loads, yaw, operating_modes

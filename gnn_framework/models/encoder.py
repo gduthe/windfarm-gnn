@@ -34,7 +34,7 @@ class Encoder(nn.Module):
         # In this case, we encode global attributes and yaw angles to both node and global features
         self.node_encoder           = MLP(kwargs['node_feature_dim'] + kwargs['glob_feature_dim'],
                                           kwargs['node_enc_mlp_layers'] + [kwargs['node_latent_dim']],
-                                          activation_type='ReLU', norm_type='LayerNorm', dropout=kwargs['dropout'])
+                                          activation_type='LeakyReLU', norm_type='LayerNorm', dropout=kwargs['dropout'])
         self.edge_encoder           = MLP(kwargs['edge_feature_dim'],
                                           kwargs['edge_enc_mlp_layers'] + [kwargs['edge_latent_dim']],
                                           activation_type='ReLU', norm_type='LayerNorm', dropout=kwargs['dropout'])

@@ -1,8 +1,8 @@
 # settings for executing the run
 run_settings:
   validate: True                        # if the model should be validated
-  num_t_workers: 2                      # num of workers for the train set dataloader
-  num_v_workers: 2                      # num of workers for the validation set dataloader
+  num_t_workers: 4                      # num of workers for the train set dataloader
+  num_v_workers: 4                      # num of workers for the validation set dataloader
 
 # settings that handle the io
 io_settings:
@@ -15,8 +15,8 @@ io_settings:
 # training hyperparameters
 hyperparameters:
   epochs: 150                           # number of epochs
-  start_lr: 1e-3                        # initial learning rate
-  lr_decay_stop: 200                    # decay the learning rate up until this epoch
+  start_lr: 5e-4                        # initial learning rate
+  lr_decay_stop: 100                    # decay the learning rate up until this epoch
   batch_size: 100                       # number of graphs per batch
   norm_type: 'mean_std'                 # type of normalization to use, either 'mean_std' or 'min_max'
   rel_wd: True                          # if the relative wind direction should be added as an edge feature
@@ -28,10 +28,10 @@ model_settings:
   glob_latent_dim: 256                  # dimension of the latent globals features (N)
 
   encoder_settings:
-    node_enc_mlp_layers: [256, 256]     # list of hidden layer dimensions for the node encoder MLP
+    node_enc_mlp_layers: [256, 512, 256] # list of hidden layer dimensions for the node encoder MLP
     edge_enc_mlp_layers: [256, 256]     # list of hidden layer dimensions for the edge encoder MLP
     glob_enc_mlp_layers: [256, 256]     # list of hidden layer dimensions for the globals encoder MLP
-    encode_globals: True                # if the globals should be encoded
+    encode_globals: False               # if the globals should be encoded
     dropout: 0.0                        # dropout value to set in the encoder
 
   processor_settings:

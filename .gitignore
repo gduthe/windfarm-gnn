@@ -8,3 +8,5 @@ gnn_framework/comet_settings.yml
 test.py
 
 *.zip
+
+LEGACY/
