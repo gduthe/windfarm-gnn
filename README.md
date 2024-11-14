@@ -1,6 +1,7 @@
 # Wind Farm GNNs
 
 This repository is dedicated to the development of Graph Neural Networks (GNN) for predicting wind farm-wide power, local flow variables and loads. Our models aim to predict 10min average power, rotor averaged wind speed and effective turbulence intensity, along with damage equivalent loads (DELs) in blade flap- and edgewise directions, tower top tortional and bottom fore-aft and side-to-side. The use of GNNs allows for a layout-agnostic multivariate model. Code associated with the following papers:
+- "Flexible multi-fidelity framework for load estimation of wind farms through graph neural networks and transfer learning", paper [here](https://doi.org/10.1017/dce.2024.35)
 - "Local flow and loads estimation on wake-affected wind turbines using graph neural networks and PyWake", paper [here](https://iopscience.iop.org/article/10.1088/1742-6596/2505/1/012014)
 - "Multivariate prediction on wake-affected wind turbines using graph neural networks", paper [here](https://www.research-collection.ethz.ch/handle/20.500.11850/674010)
 
