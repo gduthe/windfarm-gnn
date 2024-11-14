@@ -92,6 +92,8 @@ We provide a function to gather prediction results for a given test dataset in `
 
 If you are using the code, please consider citing: 
 
+> Duthé G, de N Santos F, Abdallah I, Weijtjens W, Devriendt C, Chatzi E. Flexible multi-fidelity framework for load estimation of wind farms through graph neural networks and transfer learning. Data-Centric Engineering. 2024;5:e29. doi:10.1017/dce.2024.35
+
 > Duthé, G., de Nolasco Santos, F., Abdallah, I., Réthore, P.É., Weijtjens, W., Chatzi, E. and Devriendt, C., 2023, May. Local flow and loads estimation on wake-affected wind turbines using graph neural networks and PyWake. In Journal of Physics: Conference Series (Vol. 2505, No. 1, p. 012014). IOP Publishing.
 
 > de Nolasco Santos, F., Duthé, G., Abdallah, I., Réthoré, P. É., Weijtjens, W., Chatzi, E., & Devriendt, C. (2024). Multivariate prediction on wake-affected wind turbines using graph neural networks. In EURODYN 2023. Proceedings of the XII International Conference on Structural Dynamics. IOP Publishing.
