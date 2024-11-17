@@ -77,7 +77,7 @@ To train a model, you must first set up a config yaml file. Please use the provi
 
 ### Finetuning a Model
 
-If you would like to finetune your trained model on different data (higher fidelity, new turbines, etc.) or a specific layout, you can use the provided finetuning submodule. Three different finetuning methods are implemented (LoRA, all-layers, decoder only).
+If you would like to finetune your trained model on different data (higher fidelity, new turbines, etc.) or a specific layout, you can use the provided finetuning submodule. Three different finetuning methods are implemented (LoRA, all-layers, decoder only). You can download one of our pretrained models (a 4 layer GEN GNN) [here](https://polybox.ethz.ch/index.php/s/4ItZPWY2gAus8ld). 
 
 Again you must first set up a config file, have a look at the template provided in `finetuning/ft_config.yml`. To launch the fintuning process, stay in the `gnn_framework` directory and run: 
 
